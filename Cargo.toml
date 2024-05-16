@@ -1,0 +1,9 @@
+[package]
+name = "hummingparrot"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.83"
+crossterm = "0.27.0"
+ratatui = { version = "0.26.2", features = ["all-widgets"] }
