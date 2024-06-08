@@ -7,7 +7,7 @@ use ratatui::{
 };
 use tui_textarea::TextArea;
 
-pub fn draw_ui_frame(frame: &mut Frame, state: &State, textarea: &TextArea) {
+pub fn draw_ui_frame(frame: &mut Frame, state: &State, textarea: &TextArea, frame_count: u64) {
     let layout = Layout::new(
         Direction::Vertical,
         [
@@ -30,7 +30,7 @@ pub fn draw_ui_frame(frame: &mut Frame, state: &State, textarea: &TextArea) {
 
     // Status bar
     frame.render_widget(
-        Paragraph::new(state.status_bar_text.as_str())
+        Paragraph::new(format!("[{frame_count}] {}", state.status_bar_text))
             .bg(Color::DarkGray)
             .fg(Color::LightGreen),
         layout[2],
