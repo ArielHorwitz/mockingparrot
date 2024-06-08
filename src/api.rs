@@ -1,9 +1,8 @@
 use crate::config::{ChatConfig, Config};
+use crate::state::Conversation;
 use anyhow::Result;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-
-const SYSTEM_MESSAGE: &str = "You are a helpful assistant. Do not bother being polite. Your responses should be concise and terse.";
 
 #[derive(Serialize, Debug)]
 struct GptRequest {
@@ -30,21 +29,21 @@ impl GptRequest {
     }
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct GptMessage {
     pub role: String,
     pub content: String,
 }
 
 impl GptMessage {
-    fn new_user_message(content: String) -> Self {
+    pub fn new_user_message(content: String) -> Self {
         GptMessage {
             role: "user".to_owned(),
             content,
         }
     }
 
-    fn new_system_message(content: String) -> Self {
+    pub fn new_system_message(content: String) -> Self {
         GptMessage {
             role: "system".to_owned(),
             content,
@@ -52,11 +51,17 @@ impl GptMessage {
     }
 }
 
+impl std::fmt::Display for GptMessage {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}: {}", self.role, self.content)
+    }
+}
+
 #[derive(Deserialize, Debug)]
 pub struct GptResponseChoice {
     pub index: u16,
     pub message: GptMessage,
-    pub logprobs: Option<String>,
+    pub logprobs: Option<()>,
     pub finish_reason: String,
 }
 
@@ -65,6 +70,16 @@ pub struct GptResponseUsage {
     pub prompt_tokens: u32,
     pub completion_tokens: u32,
     pub total_tokens: u32,
+}
+
+impl std::fmt::Display for GptResponseUsage {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Tokens: {} [{} prompt, {} completion]",
+            self.total_tokens, self.prompt_tokens, self.completion_tokens
+        )
+    }
 }
 
 #[derive(Deserialize, Debug)]
@@ -78,14 +93,12 @@ pub struct GptResponse {
     pub system_fingerprint: String,
 }
 
-pub async fn call_api(client: &Client, config: &Config, message: &str) -> Result<GptResponse> {
-    let call_data = GptRequest::new(
-        &config.chat,
-        vec![
-            GptMessage::new_system_message(SYSTEM_MESSAGE.to_owned()),
-            GptMessage::new_user_message(message.to_owned()),
-        ],
-    );
+pub async fn call_api(
+    client: &Client,
+    config: &Config,
+    conversation: &Conversation,
+) -> Result<GptResponse> {
+    let call_data = GptRequest::new(&config.chat, conversation.messages.clone());
     let response: GptResponse = client
         .post("https://api.openai.com/v1/chat/completions")
         .bearer_auth(&config.api.key)

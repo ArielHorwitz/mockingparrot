@@ -21,7 +21,7 @@ pub fn draw_ui_frame(frame: &mut Frame, state: &State, textarea: &TextArea, fram
     // Title bar
     frame.render_widget(
         Block::new()
-            .title("HummingParrot AI Chat Client")
+            .title(crate::APP_TITLE_FULL)
             .bg(Color::Blue)
             .fg(Color::LightGreen)
             .bold(),
@@ -46,14 +46,30 @@ pub fn draw_main(frame: &mut Frame, rect: Rect, state: &State, textarea: &TextAr
         [Constraint::Fill(1), Constraint::Length(10)],
     )
     .split(rect);
+    let main_layout = Layout::new(
+        Direction::Horizontal,
+        [Constraint::Fill(1), Constraint::Length(30)],
+    )
+    .split(layout[0]);
 
+    // Conversation display
     frame.render_widget(
-        Paragraph::new(format!("{}\n\n{:#?}", state.feedback, state.config))
+        Paragraph::new(format!("{}", state.conversation))
+            .wrap(Wrap { trim: false })
+            .bg(Color::from_hsl(270.0, 100.0, 5.0))
+            .fg(Color::Green),
+        main_layout[0],
+    );
+
+    // Feedback display
+    frame.render_widget(
+        Paragraph::new(format!("{:#?}", state.config.chat))
             .wrap(Wrap { trim: false })
             .bg(Color::from_hsl(330.0, 100.0, 5.0))
             .fg(Color::Green),
-        layout[0],
+        main_layout[1],
     );
 
+    // Text input
     frame.render_widget(textarea.widget(), layout[1]);
 }

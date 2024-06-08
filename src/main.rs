@@ -18,6 +18,8 @@ use state::State;
 use ui::draw_ui_frame;
 
 const FRAME_DURATION_MS: u64 = 250;
+const APP_TITLE: &str = "HummingParrot";
+const APP_TITLE_FULL: &str = "HummingParrot AI Chat Client";
 
 #[tokio::main]
 async fn main() {
@@ -61,24 +63,27 @@ pub async fn run_app(terminal: &mut Terminal<impl Backend>, config: Config) -> R
         match events::handle_events(FRAME_DURATION_MS, &mut textarea).context("handle events")? {
             EventResult::None => (),
             EventResult::Prompt => {
-                state.feedback = do_prompt(&config, textarea.lines().join("\n")).await?
+                state
+                    .conversation
+                    .add_message(crate::api::GptMessage::new_user_message(
+                        textarea.lines().join("\n"),
+                    ));
+                do_prompt(&config, &mut state).await?;
             }
-            EventResult::QuickFeedback(text) => state.status_bar_text = text,
+            EventResult::Feedback(text) => state.status_bar_text = text,
             EventResult::Quit => return Ok(()),
         };
     }
 }
 
-async fn do_prompt(config: &Config, prompt: String) -> Result<String> {
-    let response = api::call_api(&reqwest::Client::new(), config, prompt.as_str()).await?;
-    let response_text = &response
+async fn do_prompt(config: &Config, state: &mut State) -> Result<()> {
+    let response = api::call_api(&reqwest::Client::new(), config, &state.conversation).await?;
+    let response_message = &response
         .choices
         .first()
         .context("missing response choices")?
-        .message
-        .content;
-    Ok(format!(
-        "{} says:\n{response_text}\n\n{:?}",
-        response.model, response.usage
-    ))
+        .message;
+    state.conversation.add_message(response_message.clone());
+    state.status_bar_text = format!("AI responded. {}", &response.usage);
+    Ok(())
 }
