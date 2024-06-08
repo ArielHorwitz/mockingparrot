@@ -30,7 +30,7 @@ async fn main() {
 
 async fn run() -> Result<()> {
     let config_toml =
-        std::fs::read_to_string(Path::new("hummingparrot.toml")).context("read config file")?;
+        std::fs::read_to_string(Path::new("config.toml")).context("read config file")?;
     let config = toml::from_str(&config_toml).context("parse config file toml")?;
     // Setup terminal
     stdout()
@@ -41,7 +41,7 @@ async fn run() -> Result<()> {
         .context("new terminal with crossterm backend")?;
     terminal.clear().context("clear terminal")?;
     // Run app
-    let app_result = run_app(&mut terminal, config).await.context("app error");
+    let app_result = run_app(&mut terminal, config).await;
     // Clean up terminal
     stdout()
         .execute(LeaveAlternateScreen)
@@ -77,7 +77,9 @@ pub async fn run_app(terminal: &mut Terminal<impl Backend>, config: Config) -> R
 }
 
 async fn do_prompt(config: &Config, state: &mut State) -> Result<()> {
-    let response = api::call_api(&reqwest::Client::new(), config, &state.conversation).await?;
+    let response = api::call_api(&reqwest::Client::new(), config, &state.conversation)
+        .await
+        .context("decode response (misconfigured API key?)")?;
     let response_message = &response
         .choices
         .first()

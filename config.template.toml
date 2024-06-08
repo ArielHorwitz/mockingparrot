@@ -1,12 +1,12 @@
 # For details see: https://platform.openai.com/docs/api-reference/chat
 
 [api]
-key = "YOUR_API_KEY"
+key = ""
 
 [chat]
 model = "gpt-4o"
 max_tokens = 4096
 temperature = 1.0
 top_p = 1.0
-frequency_penalty = 0.1
-presence_penalty = 0.05
+frequency_penalty = 0
+presence_penalty = 0

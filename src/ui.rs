@@ -53,8 +53,13 @@ pub fn draw_main(frame: &mut Frame, rect: Rect, state: &State, textarea: &TextAr
     .split(layout[0]);
 
     // Conversation display
+    let convo = if state.config.api.key.is_empty() {
+        "MISSING API KEY!\n\nEnter an API key in your `config.toml` file to start chatting...\n\nhttps://platform.openai.com".to_owned()
+    } else {
+        format!("{}", state.conversation)
+    };
     frame.render_widget(
-        Paragraph::new(format!("{}", state.conversation))
+        Paragraph::new(convo)
             .wrap(Wrap { trim: false })
             .bg(Color::from_hsl(270.0, 100.0, 5.0))
             .fg(Color::Green),
