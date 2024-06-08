@@ -35,7 +35,7 @@ fn handle_keys(key_event: KeyEvent, textarea: &mut TextArea) -> Result<EventResu
     if key_event.code == KeyCode::Enter && key_event.modifiers.contains(KeyModifiers::ALT) {
         return Ok(EventResult::Prompt);
     }
-    textarea.input_without_shortcuts(key_event);
+    textarea.input(key_event);
     Ok(EventResult::QuickFeedback(format!(
         "key event: {:?} {:?}",
         key_event.code, key_event.modifiers

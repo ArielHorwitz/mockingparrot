@@ -42,18 +42,18 @@ pub fn draw_ui_frame(frame: &mut Frame, state: &State, textarea: &TextArea) {
 
 pub fn draw_main(frame: &mut Frame, rect: Rect, state: &State, textarea: &TextArea) {
     let layout = Layout::new(
-        Direction::Horizontal,
-        [Constraint::Length(20), Constraint::Fill(1)],
+        Direction::Vertical,
+        [Constraint::Fill(1), Constraint::Length(10)],
     )
     .split(rect);
-
-    frame.render_widget(textarea.widget(), layout[0]);
 
     frame.render_widget(
         Paragraph::new(format!("{}\n\n{:#?}", state.feedback, state.config))
             .wrap(Wrap { trim: false })
             .bg(Color::from_hsl(330.0, 100.0, 5.0))
             .fg(Color::Green),
-        layout[1],
+        layout[0],
     );
+
+    frame.render_widget(textarea.widget(), layout[1]);
 }

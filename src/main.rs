@@ -27,7 +27,8 @@ async fn main() {
 }
 
 async fn run() -> Result<()> {
-    let config_toml = std::fs::read_to_string(Path::new("hummingparrot.toml")).context("read config file")?;
+    let config_toml =
+        std::fs::read_to_string(Path::new("hummingparrot.toml")).context("read config file")?;
     let config = toml::from_str(&config_toml).context("parse config file toml")?;
     // Setup terminal
     stdout()
@@ -68,6 +69,14 @@ pub async fn run_app(terminal: &mut Terminal<impl Backend>, config: Config) -> R
 
 async fn do_prompt(config: &Config, prompt: String) -> Result<String> {
     let response = api::call_api(&reqwest::Client::new(), config, prompt.as_str()).await?;
-    let response_text = response.text().await?;
-    Ok(response_text.to_string())
+    let response_text = &response
+        .choices
+        .first()
+        .context("missing response choices")?
+        .message
+        .content;
+    Ok(format!(
+        "{} says:\n{response_text}\n\n{:?}",
+        response.model, response.usage
+    ))
 }
