@@ -1,5 +1,3 @@
-// For details see: https://platform.openai.com/docs/api-reference/chat
-
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize, Clone)]
@@ -37,29 +35,4 @@ pub struct ChatConfig {
     pub top_p: f32,
     pub frequency_penalty: f32,
     pub presence_penalty: f32,
-}
-
-impl Default for ChatConfig {
-    fn default() -> Self {
-        Self {
-            model: ChatModel::Gpt_4o,
-            max_tokens: 4096,
-            temperature: 1.0,
-            top_p: 1.0,
-            frequency_penalty: 0.05,
-            presence_penalty: 0.01,
-        }
-    }
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        let api = Api {
-            key: "Enter you api key here".to_owned(),
-        };
-        Self {
-            api,
-            chat: ChatConfig::default(),
-        }
-    }
 }

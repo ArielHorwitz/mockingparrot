@@ -1,23 +1,18 @@
 use crate::config::Config;
-use std::time::{Duration, Instant};
 
 #[derive(Debug)]
 pub struct State {
     pub config: Config,
     pub feedback: String,
-    pub frame_count: u64,
-    pub last_frame: Instant,
-    pub frame_time: Duration,
+    pub status_bar_text: String,
 }
 
-impl Default for State {
-    fn default() -> Self {
+impl State {
+    pub fn new(config: Config) -> Self {
         Self {
-            config: Default::default(),
-            feedback: Default::default(),
-            frame_count: Default::default(),
-            last_frame: Instant::now(),
-            frame_time: Default::default(),
+            config,
+            feedback: "Welcome to HummingParrot".to_owned(),
+            status_bar_text: "Welcome to HummingParrot".to_owned(),
         }
     }
 }

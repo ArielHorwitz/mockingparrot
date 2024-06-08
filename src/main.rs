@@ -4,7 +4,7 @@ use crossterm::{
     ExecutableCommand,
 };
 use ratatui::prelude::{Backend, CrosstermBackend, Terminal};
-use std::{io::stdout, time::Instant};
+use std::{io::stdout, path::Path};
 
 mod api;
 mod config;
@@ -19,16 +19,16 @@ use ui::draw_ui_frame;
 
 const FRAME_DURATION_MS: u64 = 250;
 
-fn main() {
-    if let Err(e) = run() {
+#[tokio::main]
+async fn main() {
+    if let Err(e) = run().await {
         eprintln!("{e:?}");
     }
 }
 
-fn run() -> Result<()> {
-    let mut config = Config::default();
-    include_str!("../APIKEY").trim().clone_into(&mut config.api.key);
-    println!("{config:?}");
+async fn run() -> Result<()> {
+    let config_toml = std::fs::read_to_string(Path::new("hummingparrot.toml")).context("read config file")?;
+    let config = toml::from_str(&config_toml).context("parse config file toml")?;
     // Setup terminal
     stdout()
         .execute(EnterAlternateScreen)
@@ -38,7 +38,7 @@ fn run() -> Result<()> {
         .context("new terminal with crossterm backend")?;
     terminal.clear().context("clear terminal")?;
     // Run app
-    let app_result = run_app(&mut terminal, config).context("app error");
+    let app_result = run_app(&mut terminal, config).await.context("app error");
     // Clean up terminal
     stdout()
         .execute(LeaveAlternateScreen)
@@ -48,30 +48,26 @@ fn run() -> Result<()> {
     app_result
 }
 
-pub fn run_app(terminal: &mut Terminal<impl Backend>, config: Config) -> Result<()> {
-    let mut state = State::default();
+pub async fn run_app(terminal: &mut Terminal<impl Backend>, config: Config) -> Result<()> {
+    let mut state = State::new(config.clone());
     let mut textarea = tui_textarea::TextArea::default();
     loop {
-        state.frame_time = state.last_frame.elapsed();
-        state.last_frame = Instant::now();
-        state.frame_count += 1;
         terminal
             .draw(|frame| draw_ui_frame(frame, &state, &textarea))
             .context("draw frame")?;
         match events::handle_events(FRAME_DURATION_MS, &mut textarea).context("handle events")? {
             EventResult::None => (),
             EventResult::Prompt => {
-                state.feedback = do_prompt(&config, textarea.lines().join("\n"))?
+                state.feedback = do_prompt(&config, textarea.lines().join("\n")).await?
             }
-            EventResult::Feedback(text) => state.feedback = text,
+            EventResult::QuickFeedback(text) => state.status_bar_text = text,
             EventResult::Quit => return Ok(()),
         };
     }
 }
 
-fn do_prompt(config: &Config, prompt: String) -> Result<String> {
-    let rt = tokio::runtime::Runtime::new()?;
-    let response = rt.block_on(api::call_api(&reqwest::Client::new(), config, prompt.as_str()))?;
-    let text = rt.block_on(response.text())?;
-    Ok(format!("\n{text}"))
+async fn do_prompt(config: &Config, prompt: String) -> Result<String> {
+    let response = api::call_api(&reqwest::Client::new(), config, prompt.as_str()).await?;
+    let response_text = response.text().await?;
+    Ok(response_text.to_string())
 }

@@ -30,7 +30,7 @@ pub fn draw_ui_frame(frame: &mut Frame, state: &State, textarea: &TextArea) {
 
     // Status bar
     frame.render_widget(
-        Paragraph::new(state.feedback.to_string())
+        Paragraph::new(state.status_bar_text.as_str())
             .bg(Color::DarkGray)
             .fg(Color::LightGreen),
         layout[2],
@@ -50,7 +50,7 @@ pub fn draw_main(frame: &mut Frame, rect: Rect, state: &State, textarea: &TextAr
     frame.render_widget(textarea.widget(), layout[0]);
 
     frame.render_widget(
-        Paragraph::new(format!("{:#?}\n{}", state, state.feedback))
+        Paragraph::new(format!("{}\n\n{:#?}", state.feedback, state.config))
             .wrap(Wrap { trim: false })
             .bg(Color::from_hsl(330.0, 100.0, 5.0))
             .fg(Color::Green),
