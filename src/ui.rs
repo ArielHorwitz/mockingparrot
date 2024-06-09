@@ -7,7 +7,20 @@ use ratatui::{
 };
 use tui_textarea::TextArea;
 
-pub fn draw_ui_frame(frame: &mut Frame, state: &State, textarea: &TextArea) {
+
+#[derive(Debug)]
+pub struct UiState<'a> {
+    pub debug: bool,
+    pub textarea: TextArea<'a>,
+}
+
+impl<'a> Default for UiState<'a> {
+    fn default() -> Self {
+        Self { debug: false, textarea: get_textarea() }
+    }
+}
+
+pub fn draw_ui_frame(frame: &mut Frame, state: &State, ui_state: &UiState) {
     let layout = Layout::new(
         Direction::Vertical,
         [
@@ -29,8 +42,14 @@ pub fn draw_ui_frame(frame: &mut Frame, state: &State, textarea: &TextArea) {
     );
 
     // Status bar
-    let now = chrono::Local::now();
-    let now = format!("{}", now.format("%Y-%m-%d %H:%M:%S"));
+    let now = {
+        let now = chrono::Local::now();
+        if ui_state.debug {
+            format!("{}", now.format("%Y-%m-%d %H:%M:%S%.3f"))
+        } else {
+            format!("{}", now.format("%Y-%m-%d %H:%M:%S"))
+        }
+    };
     frame.render_widget(
         Paragraph::new(format!("{now} | {}", state.status_bar_text))
             .bg(Color::DarkGray)
@@ -39,10 +58,10 @@ pub fn draw_ui_frame(frame: &mut Frame, state: &State, textarea: &TextArea) {
     );
 
     // Main UI
-    draw_main(frame, layout[1], state, textarea);
+    draw_main(frame, layout[1], state, ui_state);
 }
 
-pub fn draw_main(frame: &mut Frame, rect: Rect, state: &State, textarea: &TextArea) {
+pub fn draw_main(frame: &mut Frame, rect: Rect, state: &State, ui_state: &UiState) {
     let layout = Layout::new(
         Direction::Vertical,
         [Constraint::Fill(1), Constraint::Length(10)],
@@ -78,7 +97,7 @@ pub fn draw_main(frame: &mut Frame, rect: Rect, state: &State, textarea: &TextAr
     );
 
     // Text input
-    frame.render_widget(textarea.widget(), layout[1]);
+    frame.render_widget(ui_state.textarea.widget(), layout[1]);
 }
 
 pub fn get_textarea() -> TextArea<'static> {

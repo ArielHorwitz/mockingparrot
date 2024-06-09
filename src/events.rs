@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
-use tui_textarea::TextArea;
+use crate::ui::UiState;
 
 #[derive(Debug)]
 pub enum EventResult {
@@ -10,13 +10,13 @@ pub enum EventResult {
     Quit,
 }
 
-pub fn handle_events(timeout: u64, textarea: &mut TextArea) -> Result<EventResult> {
+pub fn handle_events(timeout: u64, ui_state: &mut UiState) -> Result<EventResult> {
     if !event::poll(std::time::Duration::from_millis(timeout)).context("poll terminal events")? {
         return Ok(EventResult::None);
     };
     let terminal_event = event::read().context("read terminal event")?;
     match terminal_event {
-        Event::Key(key_event) => handle_keys(key_event, textarea),
+        Event::Key(key_event) => handle_keys(key_event, ui_state),
         Event::FocusGained => Ok(EventResult::Feedback(String::from("focus gained"))),
         Event::FocusLost => Ok(EventResult::Feedback(String::from("focus lost"))),
         Event::Mouse(ev) => Ok(EventResult::Feedback(format!("mouse {ev:#?}"))),
@@ -25,7 +25,7 @@ pub fn handle_events(timeout: u64, textarea: &mut TextArea) -> Result<EventResul
     }
 }
 
-fn handle_keys(key_event: KeyEvent, textarea: &mut TextArea) -> Result<EventResult> {
+fn handle_keys(key_event: KeyEvent, ui_state: &mut UiState) -> Result<EventResult> {
     if key_event.kind != KeyEventKind::Press {
         return Ok(EventResult::None);
     }
@@ -35,6 +35,6 @@ fn handle_keys(key_event: KeyEvent, textarea: &mut TextArea) -> Result<EventResu
     if key_event.code == KeyCode::Enter && key_event.modifiers.contains(KeyModifiers::ALT) {
         return Ok(EventResult::Prompt);
     }
-    textarea.input(key_event);
+    ui_state.textarea.input(key_event);
     Ok(EventResult::None)
 }

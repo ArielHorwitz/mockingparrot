@@ -50,15 +50,15 @@ async fn run() -> Result<()> {
 
 pub async fn run_app(terminal: &mut Terminal<impl Backend>, config: Config) -> Result<()> {
     let mut state = State::new(config.clone());
-    let mut textarea = ui::get_textarea();
+    let mut ui_state = ui::UiState::default();
     loop {
         terminal
-            .draw(|frame| ui::draw_ui_frame(frame, &state, &textarea))
+            .draw(|frame| ui::draw_ui_frame(frame, &state, &ui_state))
             .context("draw frame")?;
-        match events::handle_events(FRAME_DURATION_MS, &mut textarea).context("handle events")? {
+        match events::handle_events(FRAME_DURATION_MS, &mut ui_state).context("handle events")? {
             EventResult::None => (),
             EventResult::Prompt => {
-                let message = GptMessage::new_user_message(textarea.lines().join("\n"));
+                let message = GptMessage::new_user_message(ui_state.textarea.lines().join("\n"));
                 state.conversation.add_message(message);
                 do_prompt(&config, &mut state).await?;
             }
