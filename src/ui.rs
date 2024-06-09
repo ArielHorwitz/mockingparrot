@@ -7,16 +7,50 @@ use ratatui::{
 };
 use tui_textarea::TextArea;
 
-
-#[derive(Debug)]
 pub struct UiState<'a> {
-    pub debug: bool,
+    pub tab: ViewTab,
     pub textarea: TextArea<'a>,
+    pub debug: bool,
+    pub key_event_debug: String,
 }
 
 impl<'a> Default for UiState<'a> {
     fn default() -> Self {
-        Self { debug: false, textarea: get_textarea() }
+        Self {
+            debug: false,
+            textarea: get_textarea(),
+            tab: ViewTab::Conversation,
+            key_event_debug: Default::default(),
+        }
+    }
+}
+
+impl<'a> std::fmt::Debug for UiState<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Debug: {:?}\n{}", self.debug, self.key_event_debug)
+    }
+}
+
+pub fn get_textarea() -> TextArea<'static> {
+    let mut textarea = TextArea::default();
+    textarea.set_style(Style::new().bg(Color::Rgb(0, 25, 25)).fg(Color::White));
+    textarea.set_line_number_style(Style::new().bg(Color::Black).fg(Color::Cyan));
+    textarea.set_cursor_style(Style::new().bg(Color::Rgb(200, 200, 200)));
+    textarea
+}
+
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum ViewTab {
+    Conversation,
+    Config,
+}
+
+impl ViewTab {
+    pub fn next_tab(self) -> ViewTab {
+        match self {
+            ViewTab::Conversation => ViewTab::Config,
+            ViewTab::Config => ViewTab::Conversation,
+        }
     }
 }
 
@@ -32,9 +66,10 @@ pub fn draw_ui_frame(frame: &mut Frame, state: &State, ui_state: &UiState) {
     .split(frame.size());
 
     // Title bar
+    let title = format!("{} - {:?}", crate::APP_TITLE_FULL, ui_state.tab);
     frame.render_widget(
         Block::new()
-            .title(crate::APP_TITLE_FULL)
+            .title(title)
             .bg(Color::Blue)
             .fg(Color::LightGreen)
             .bold(),
@@ -58,20 +93,18 @@ pub fn draw_ui_frame(frame: &mut Frame, state: &State, ui_state: &UiState) {
     );
 
     // Main UI
-    draw_main(frame, layout[1], state, ui_state);
+    match ui_state.tab {
+        ViewTab::Conversation => draw_conversation(frame, layout[1], state, ui_state),
+        ViewTab::Config => draw_config(frame, layout[1], state, ui_state),
+    };
 }
 
-pub fn draw_main(frame: &mut Frame, rect: Rect, state: &State, ui_state: &UiState) {
+pub fn draw_conversation(frame: &mut Frame, rect: Rect, state: &State, ui_state: &UiState) {
     let layout = Layout::new(
         Direction::Vertical,
         [Constraint::Fill(1), Constraint::Length(10)],
     )
     .split(rect);
-    let main_layout = Layout::new(
-        Direction::Horizontal,
-        [Constraint::Fill(1), Constraint::Length(30)],
-    )
-    .split(layout[0]);
 
     // Conversation display
     let convo = if state.config.api.key.is_empty() {
@@ -84,26 +117,32 @@ pub fn draw_main(frame: &mut Frame, rect: Rect, state: &State, ui_state: &UiStat
             .wrap(Wrap { trim: false })
             .bg(Color::Rgb(0, 0, 35))
             .fg(Color::Rgb(0, 255, 0)),
-        main_layout[0],
-    );
-
-    // Feedback display
-    frame.render_widget(
-        Paragraph::new(format!("{:#?}", state.config.chat))
-            .wrap(Wrap { trim: false })
-            .bg(Color::Rgb(30, 0, 35))
-            .fg(Color::Rgb(125, 150, 0)),
-        main_layout[1],
+        layout[0],
     );
 
     // Text input
     frame.render_widget(ui_state.textarea.widget(), layout[1]);
 }
 
-pub fn get_textarea() -> TextArea<'static> {
-    let mut textarea = TextArea::default();
-    textarea.set_style(Style::new().bg(Color::Rgb(0, 25, 25)).fg(Color::White));
-    textarea.set_line_number_style(Style::new().bg(Color::Black).fg(Color::Cyan));
-    textarea.set_cursor_style(Style::new().bg(Color::Rgb(200, 200, 200)));
-    textarea
+pub fn draw_config(frame: &mut Frame, rect: Rect, state: &State, ui_state: &UiState) {
+    let layout = Layout::new(
+        Direction::Horizontal,
+        [Constraint::Fill(1), Constraint::Fill(1)],
+    )
+    .split(rect);
+
+    frame.render_widget(
+        Paragraph::new(format!("{:#?}", state.config.chat))
+            .wrap(Wrap { trim: false })
+            .bg(Color::Rgb(0, 20, 35))
+            .fg(Color::Rgb(125, 150, 0)),
+        layout[0],
+    );
+    frame.render_widget(
+        Paragraph::new(format!("{:#?}", ui_state))
+            .wrap(Wrap { trim: false })
+            .bg(Color::Rgb(30, 0, 35))
+            .fg(Color::Rgb(125, 150, 0)),
+        layout[1],
+    );
 }

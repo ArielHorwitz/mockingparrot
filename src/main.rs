@@ -55,12 +55,12 @@ pub async fn run_app(terminal: &mut Terminal<impl Backend>, config: Config) -> R
         terminal
             .draw(|frame| ui::draw_ui_frame(frame, &state, &ui_state))
             .context("draw frame")?;
-        match events::handle_events(FRAME_DURATION_MS, &mut ui_state).context("handle events")? {
+        match events::handle_events(FRAME_DURATION_MS, &mut state, &mut ui_state).context("handle events")? {
             EventResult::None => (),
             EventResult::Prompt => {
                 let message = GptMessage::new_user_message(ui_state.textarea.lines().join("\n"));
                 state.conversation.add_message(message);
-                do_prompt(&config, &mut state).await?;
+                do_prompt(&mut state).await?;
             }
             EventResult::Feedback(text) => state.status_bar_text = text,
             EventResult::Quit => return Ok(()),
@@ -68,8 +68,8 @@ pub async fn run_app(terminal: &mut Terminal<impl Backend>, config: Config) -> R
     }
 }
 
-async fn do_prompt(config: &Config, state: &mut State) -> Result<()> {
-    let response = api::call_api(&reqwest::Client::new(), config, &state.conversation)
+async fn do_prompt(state: &mut State) -> Result<()> {
+    let response = api::call_api(&reqwest::Client::new(), &state.config, &state.conversation)
         .await
         .context("decode response (misconfigured API key?)")?;
     let response_message = &response
