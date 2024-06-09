@@ -1,13 +1,13 @@
 use crate::State;
 use ratatui::{
-    prelude::{Constraint, Direction, Layout, Rect, Stylize, Style},
+    prelude::{Constraint, Direction, Layout, Rect, Style, Stylize},
     style::Color,
     widgets::{Block, Paragraph, Wrap},
     Frame,
 };
 use tui_textarea::TextArea;
 
-pub fn draw_ui_frame(frame: &mut Frame, state: &State, textarea: &TextArea, frame_count: u64) {
+pub fn draw_ui_frame(frame: &mut Frame, state: &State, textarea: &TextArea) {
     let layout = Layout::new(
         Direction::Vertical,
         [
@@ -29,8 +29,10 @@ pub fn draw_ui_frame(frame: &mut Frame, state: &State, textarea: &TextArea, fram
     );
 
     // Status bar
+    let now = chrono::Local::now();
+    let now = format!("{}", now.format("%Y-%m-%d %H:%M:%S"));
     frame.render_widget(
-        Paragraph::new(format!("[{frame_count}] {}", state.status_bar_text))
+        Paragraph::new(format!("{now} | {}", state.status_bar_text))
             .bg(Color::DarkGray)
             .fg(Color::LightGreen),
         layout[2],
