@@ -15,7 +15,6 @@ mod ui;
 use config::Config;
 use events::EventResult;
 use state::State;
-use ui::draw_ui_frame;
 
 const FRAME_DURATION_MS: u64 = 250;
 const APP_TITLE: &str = "HummingParrot";
@@ -53,12 +52,12 @@ async fn run() -> Result<()> {
 
 pub async fn run_app(terminal: &mut Terminal<impl Backend>, config: Config) -> Result<()> {
     let mut state = State::new(config.clone());
-    let mut textarea = tui_textarea::TextArea::default();
+    let mut textarea = ui::get_textarea();
     let mut frame_count = 0;
     loop {
         frame_count += 1;
         terminal
-            .draw(|frame| draw_ui_frame(frame, &state, &textarea, frame_count))
+            .draw(|frame| ui::draw_ui_frame(frame, &state, &textarea, frame_count))
             .context("draw frame")?;
         match events::handle_events(FRAME_DURATION_MS, &mut textarea).context("handle events")? {
             EventResult::None => (),

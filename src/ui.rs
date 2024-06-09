@@ -1,6 +1,6 @@
 use crate::State;
 use ratatui::{
-    prelude::{Constraint, Direction, Layout, Rect, Stylize},
+    prelude::{Constraint, Direction, Layout, Rect, Stylize, Style},
     style::Color,
     widgets::{Block, Paragraph, Wrap},
     Frame,
@@ -61,8 +61,8 @@ pub fn draw_main(frame: &mut Frame, rect: Rect, state: &State, textarea: &TextAr
     frame.render_widget(
         Paragraph::new(convo)
             .wrap(Wrap { trim: false })
-            .bg(Color::from_hsl(270.0, 100.0, 5.0))
-            .fg(Color::Green),
+            .bg(Color::Rgb(0, 0, 35))
+            .fg(Color::Rgb(0, 255, 0)),
         main_layout[0],
     );
 
@@ -70,11 +70,19 @@ pub fn draw_main(frame: &mut Frame, rect: Rect, state: &State, textarea: &TextAr
     frame.render_widget(
         Paragraph::new(format!("{:#?}", state.config.chat))
             .wrap(Wrap { trim: false })
-            .bg(Color::from_hsl(330.0, 100.0, 5.0))
-            .fg(Color::Green),
+            .bg(Color::Rgb(30, 0, 35))
+            .fg(Color::Rgb(125, 150, 0)),
         main_layout[1],
     );
 
     // Text input
     frame.render_widget(textarea.widget(), layout[1]);
+}
+
+pub fn get_textarea() -> TextArea<'static> {
+    let mut textarea = TextArea::default();
+    textarea.set_style(Style::new().bg(Color::Rgb(0, 25, 25)).fg(Color::White));
+    textarea.set_line_number_style(Style::new().bg(Color::Black).fg(Color::Cyan));
+    textarea.set_cursor_style(Style::new().bg(Color::Rgb(200, 200, 200)));
+    textarea
 }
