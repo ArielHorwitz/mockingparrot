@@ -13,10 +13,13 @@ use api::GptMessage;
 use config::Config;
 use events::EventResult;
 use state::State;
+use ui::UiState;
 
 const FRAME_DURATION_MS: u64 = 50;
 const APP_TITLE: &str = "HummingParrot";
 const APP_TITLE_FULL: &str = "HummingParrot AI Chat Client";
+const API_ERROR_FEEDBACK: &str = "An error occured, see debug logs.";
+const API_ERROR_SYSTEM_MESSAGE: &str = "Failed to get a response from the assistant.";
 
 #[tokio::main]
 async fn main() {
@@ -60,24 +63,30 @@ pub async fn run_app(terminal: &mut Terminal<impl Backend>, config: Config) -> R
             EventResult::Prompt => {
                 let message = GptMessage::new_user_message(ui_state.textarea.lines().join("\n"));
                 state.conversation.add_message(message);
-                do_prompt(&mut state).await?;
+                do_prompt(&mut state, &mut ui_state).await?;
             }
-            EventResult::Feedback(text) => state.status_bar_text = text,
+            EventResult::Feedback(text) => ui_state.status_bar_text = text,
             EventResult::Quit => return Ok(()),
         };
     }
 }
 
-async fn do_prompt(state: &mut State) -> Result<()> {
-    let response = api::call_api(&reqwest::Client::new(), &state.config, &state.conversation)
+async fn do_prompt(state: &mut State, ui_state: &mut UiState<'_>) -> Result<()> {
+    let raw_response = api::call_api(&reqwest::Client::new(), &state.config, &state.conversation)
         .await
-        .context("decode response (misconfigured API key?)")?;
-    let response_message = &response
-        .choices
-        .first()
-        .context("missing response choices")?
-        .message;
-    state.conversation.add_message(response_message.clone());
-    state.status_bar_text = format!("AI responded. {}", &response.usage);
+        .context("decode response");
+    if let Ok(response) = raw_response {
+        let message = &response
+            .choices
+            .first()
+            .context("missing response choices")?
+            .message;
+        state.conversation.add_message(message.clone());
+        ui_state.status_bar_text = format!("AI responded. {}", response.usage);
+    } else {
+        API_ERROR_FEEDBACK.clone_into(&mut ui_state.status_bar_text);
+        state.conversation.add_message(GptMessage::new_system_message(API_ERROR_SYSTEM_MESSAGE.to_owned()));
+        ui_state.feedback = format!("{raw_response:#?}");
+    }
     Ok(())
 }

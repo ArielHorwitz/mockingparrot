@@ -7,7 +7,6 @@ const DEFAULT_SYSTEM_MESSAGE: &str = "You are a helpful assistant. Do not bother
 pub struct State {
     pub config: Config,
     pub conversation: Conversation,
-    pub status_bar_text: String,
 }
 
 impl State {
@@ -15,7 +14,6 @@ impl State {
         Self {
             config,
             conversation: Conversation::default(),
-            status_bar_text: format!("Welcome to {}", crate::APP_TITLE),
         }
     }
 }
