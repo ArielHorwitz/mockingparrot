@@ -1,4 +1,4 @@
-use crate::State;
+use crate::state::State;
 use ratatui::{
     prelude::{Constraint, Direction, Layout, Rect, Style, Stylize},
     style::Color,
