@@ -51,8 +51,10 @@ pub async fn run_app(terminal: &mut Terminal<impl Backend>, config: Config) -> R
     let mut ui_state = ui::UiState::default();
     loop {
         terminal
-            .draw(|frame| if let Err(e) = ui::draw_ui_frame(frame, &state, &ui_state) {
-                todo!("log error: {e}");
+            .draw(|frame| {
+                if let Err(e) = ui::draw_ui_frame(frame, &state, &ui_state) {
+                    todo!("log error: {e}");
+                }
             })
             .context("draw frame")?;
         if events::handle_events(FRAME_DURATION_MS, &mut state, &mut ui_state)

@@ -1,5 +1,5 @@
-use anyhow::{Context, Result};
 use crate::state::State;
+use anyhow::{Context, Result};
 use ratatui::{
     prelude::{Constraint, Direction, Layout, Rect, Style, Stylize},
     style::Color,
@@ -107,13 +107,22 @@ pub fn draw_ui_frame(frame: &mut Frame, state: &State, ui_state: &UiState) -> Re
 
     // Main UI
     match ui_state.tab {
-        ViewTab::Conversation => draw_conversation(frame, *layout.get(1).context("ui index")?, state, ui_state)?,
-        ViewTab::Config => draw_config(frame, *layout.get(1).context("ui index")?, state, ui_state)?,
+        ViewTab::Conversation => {
+            draw_conversation(frame, *layout.get(1).context("ui index")?, state, ui_state)?
+        }
+        ViewTab::Config => {
+            draw_config(frame, *layout.get(1).context("ui index")?, state, ui_state)?
+        }
     };
     Ok(())
 }
 
-pub fn draw_conversation(frame: &mut Frame, rect: Rect, state: &State, ui_state: &UiState) -> Result<()> {
+pub fn draw_conversation(
+    frame: &mut Frame,
+    rect: Rect,
+    state: &State,
+    ui_state: &UiState,
+) -> Result<()> {
     let layout = Layout::new(
         Direction::Vertical,
         [Constraint::Fill(1), Constraint::Length(10)],
@@ -135,7 +144,10 @@ pub fn draw_conversation(frame: &mut Frame, rect: Rect, state: &State, ui_state:
     );
 
     // Text input
-    frame.render_widget(ui_state.textarea.widget(), *layout.get(1).context("ui index")?);
+    frame.render_widget(
+        ui_state.textarea.widget(),
+        *layout.get(1).context("ui index")?,
+    );
     Ok(())
 }
 

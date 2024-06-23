@@ -41,49 +41,54 @@ async fn handle_keys(
         (KeyCode::BackTab, KeyModifiers::SHIFT) => ui_state.tab = ui_state.tab.next_tab(),
         (KeyCode::F(1), _) => ui_state.tab = ViewTab::Conversation,
         (KeyCode::F(2), _) => ui_state.tab = ViewTab::Config,
-        _ => {
-            if ui_state.tab == ViewTab::Conversation {
-                match (key_event.code, key_event.modifiers) {
-                    (KeyCode::Enter, KeyModifiers::ALT) => {
-                        let message =
-                            GptMessage::new_user_message(ui_state.textarea.lines().join("\n"));
-                        state.conversation.add_message(message);
-                        do_prompt(state, ui_state).await?;
-                    }
-                    _ => {
-                        ui_state.textarea.input(key_event);
-                    }
-                };
-            }
-            if ui_state.tab == ViewTab::Config {
-                match (key_event.code, key_event.modifiers) {
-                    (KeyCode::Char('d'), KeyModifiers::NONE) => ui_state.debug = !ui_state.debug,
-                    (KeyCode::Char('t'), KeyModifiers::NONE) => {
-                        state.config.chat.temperature += 0.05
-                    }
-                    (KeyCode::Char('T'), KeyModifiers::SHIFT) => {
-                        state.config.chat.temperature -= 0.05
-                    }
-                    (KeyCode::Char('p'), KeyModifiers::NONE) => state.config.chat.top_p += 0.05,
-                    (KeyCode::Char('P'), KeyModifiers::SHIFT) => state.config.chat.top_p -= 0.05,
-                    (KeyCode::Char('f'), KeyModifiers::NONE) => {
-                        state.config.chat.frequency_penalty += 0.05
-                    }
-                    (KeyCode::Char('F'), KeyModifiers::SHIFT) => {
-                        state.config.chat.frequency_penalty -= 0.05
-                    }
-                    (KeyCode::Char('r'), KeyModifiers::NONE) => {
-                        state.config.chat.presence_penalty += 0.05
-                    }
-                    (KeyCode::Char('R'), KeyModifiers::SHIFT) => {
-                        state.config.chat.presence_penalty -= 0.05
-                    }
-                    _ => (),
-                };
-            }
-        }
+        _ => match ui_state.tab {
+            ViewTab::Conversation => handle_conversation_keys(key_event, state, ui_state)
+                .await
+                .context("handle conversation keys")?,
+            ViewTab::Config => handle_config_keys(key_event, state, ui_state)
+                .await
+                .context("handle config keys")?,
+        },
     };
     Ok(false)
+}
+
+async fn handle_config_keys(
+    key_event: KeyEvent,
+    state: &mut State,
+    ui_state: &mut UiState<'_>,
+) -> Result<()> {
+    match (key_event.code, key_event.modifiers) {
+        (KeyCode::Char('d'), KeyModifiers::NONE) => ui_state.debug = !ui_state.debug,
+        (KeyCode::Char('t'), KeyModifiers::NONE) => state.config.chat.temperature += 0.05,
+        (KeyCode::Char('T'), KeyModifiers::SHIFT) => state.config.chat.temperature -= 0.05,
+        (KeyCode::Char('p'), KeyModifiers::NONE) => state.config.chat.top_p += 0.05,
+        (KeyCode::Char('P'), KeyModifiers::SHIFT) => state.config.chat.top_p -= 0.05,
+        (KeyCode::Char('f'), KeyModifiers::NONE) => state.config.chat.frequency_penalty += 0.05,
+        (KeyCode::Char('F'), KeyModifiers::SHIFT) => state.config.chat.frequency_penalty -= 0.05,
+        (KeyCode::Char('r'), KeyModifiers::NONE) => state.config.chat.presence_penalty += 0.05,
+        (KeyCode::Char('R'), KeyModifiers::SHIFT) => state.config.chat.presence_penalty -= 0.05,
+        _ => (),
+    };
+    Ok(())
+}
+
+async fn handle_conversation_keys(
+    key_event: KeyEvent,
+    state: &mut State,
+    ui_state: &mut UiState<'_>,
+) -> Result<()> {
+    match (key_event.code, key_event.modifiers) {
+        (KeyCode::Enter, KeyModifiers::ALT) => {
+            let message = GptMessage::new_user_message(ui_state.textarea.lines().join("\n"));
+            state.conversation.add_message(message);
+            do_prompt(state, ui_state).await?;
+        }
+        _ => {
+            ui_state.textarea.input(key_event);
+        }
+    };
+    Ok(())
 }
 
 async fn do_prompt(state: &mut State, ui_state: &mut UiState<'_>) -> Result<()> {
