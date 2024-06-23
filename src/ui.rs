@@ -79,7 +79,7 @@ pub fn draw_ui_frame(frame: &mut Frame, state: &State, ui_state: &UiState) {
             .bg(Color::Blue)
             .fg(Color::LightGreen)
             .bold(),
-        layout[0],
+        *layout.first().expect("ui index"),
     );
 
     // Status bar
@@ -95,19 +95,19 @@ pub fn draw_ui_frame(frame: &mut Frame, state: &State, ui_state: &UiState) {
         Paragraph::new(ui_state.status_bar_text.as_str())
             .bg(Color::DarkGray)
             .fg(Color::LightGreen),
-        layout[2],
+        *layout.get(2).expect("ui index"),
     );
     frame.render_widget(
         Paragraph::new(format!("{STATUSBAR_HELP_TEXT} | {now}"))
             .bg(Color::Black)
             .fg(Color::Green),
-        layout[3],
+        *layout.get(3).expect("ui index"),
     );
 
     // Main UI
     match ui_state.tab {
-        ViewTab::Conversation => draw_conversation(frame, layout[1], state, ui_state),
-        ViewTab::Config => draw_config(frame, layout[1], state, ui_state),
+        ViewTab::Conversation => draw_conversation(frame, *layout.get(1).expect("ui index"), state, ui_state),
+        ViewTab::Config => draw_config(frame, *layout.get(1).expect("ui index"), state, ui_state),
     };
 }
 
@@ -129,11 +129,11 @@ pub fn draw_conversation(frame: &mut Frame, rect: Rect, state: &State, ui_state:
             .wrap(Wrap { trim: false })
             .bg(Color::Rgb(0, 0, 35))
             .fg(Color::Rgb(0, 255, 0)),
-        layout[0],
+        *layout.first().expect("ui index"),
     );
 
     // Text input
-    frame.render_widget(ui_state.textarea.widget(), layout[1]);
+    frame.render_widget(ui_state.textarea.widget(), *layout.get(1).expect("ui index"));
 }
 
 pub fn draw_config(frame: &mut Frame, rect: Rect, state: &State, ui_state: &UiState) {
@@ -146,27 +146,27 @@ pub fn draw_config(frame: &mut Frame, rect: Rect, state: &State, ui_state: &UiSt
         Direction::Horizontal,
         [Constraint::Fill(1), Constraint::Fill(1)],
     )
-    .split(main_layout[0]);
+    .split(*main_layout.first().expect("ui index"));
 
     frame.render_widget(
         Paragraph::new(format!("{:#?}", state.config.chat))
             .wrap(Wrap { trim: false })
             .bg(Color::Rgb(0, 20, 35))
             .fg(Color::Rgb(125, 150, 0)),
-        top_layout[0],
+        *top_layout.first().expect("ui index"),
     );
     frame.render_widget(
         Paragraph::new(format!("{:#?}", ui_state))
             .wrap(Wrap { trim: false })
             .bg(Color::Rgb(30, 0, 35))
             .fg(Color::Rgb(125, 150, 0)),
-        top_layout[1],
+        *top_layout.get(1).expect("ui index"),
     );
     frame.render_widget(
         Paragraph::new(ui_state.feedback.as_str())
             .wrap(Wrap { trim: false })
             .bg(Color::Rgb(30, 30, 0))
             .fg(Color::Rgb(125, 150, 0)),
-        main_layout[1],
+        *main_layout.get(1).expect("ui index"),
     );
 }
