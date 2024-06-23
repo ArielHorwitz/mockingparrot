@@ -57,6 +57,7 @@ impl std::fmt::Display for GptMessage {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Deserialize, Debug)]
 pub struct GptResponseChoice {
     pub index: u16,
@@ -82,6 +83,7 @@ impl std::fmt::Display for GptResponseUsage {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Deserialize, Debug)]
 pub struct GptResponse {
     pub id: String,
