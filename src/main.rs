@@ -57,11 +57,13 @@ pub async fn run_app(terminal: &mut Terminal<impl Backend>, config: Config) -> R
                 }
             })
             .context("draw frame")?;
-        if events::handle_events(FRAME_DURATION_MS, &mut state, &mut ui_state)
+        match events::handle_events(FRAME_DURATION_MS, &mut state, &mut ui_state)
             .await
             .context("handle events")?
         {
-            return Ok(());
+            events::HandleEventResult::None => (),
+            events::HandleEventResult::Redraw => terminal.clear().context("clear terminal")?,
+            events::HandleEventResult::Quit => return Ok(()),
         };
     }
 }
