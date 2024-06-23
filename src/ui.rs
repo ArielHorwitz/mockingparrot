@@ -1,3 +1,4 @@
+use anyhow::{Context, Result};
 use crate::state::State;
 use ratatui::{
     prelude::{Constraint, Direction, Layout, Rect, Style, Stylize},
@@ -60,7 +61,7 @@ impl ViewTab {
     }
 }
 
-pub fn draw_ui_frame(frame: &mut Frame, state: &State, ui_state: &UiState) {
+pub fn draw_ui_frame(frame: &mut Frame, state: &State, ui_state: &UiState) -> Result<()> {
     let layout = Layout::new(
         Direction::Vertical,
         [
@@ -79,7 +80,7 @@ pub fn draw_ui_frame(frame: &mut Frame, state: &State, ui_state: &UiState) {
             .bg(Color::Blue)
             .fg(Color::LightGreen)
             .bold(),
-        *layout.first().expect("ui index"),
+        *layout.first().context("ui index")?,
     );
 
     // Status bar
@@ -95,23 +96,24 @@ pub fn draw_ui_frame(frame: &mut Frame, state: &State, ui_state: &UiState) {
         Paragraph::new(ui_state.status_bar_text.as_str())
             .bg(Color::DarkGray)
             .fg(Color::LightGreen),
-        *layout.get(2).expect("ui index"),
+        *layout.get(2).context("ui index")?,
     );
     frame.render_widget(
         Paragraph::new(format!("{STATUSBAR_HELP_TEXT} | {now}"))
             .bg(Color::Black)
             .fg(Color::Green),
-        *layout.get(3).expect("ui index"),
+        *layout.get(3).context("ui index")?,
     );
 
     // Main UI
     match ui_state.tab {
-        ViewTab::Conversation => draw_conversation(frame, *layout.get(1).expect("ui index"), state, ui_state),
-        ViewTab::Config => draw_config(frame, *layout.get(1).expect("ui index"), state, ui_state),
+        ViewTab::Conversation => draw_conversation(frame, *layout.get(1).context("ui index")?, state, ui_state)?,
+        ViewTab::Config => draw_config(frame, *layout.get(1).context("ui index")?, state, ui_state)?,
     };
+    Ok(())
 }
 
-pub fn draw_conversation(frame: &mut Frame, rect: Rect, state: &State, ui_state: &UiState) {
+pub fn draw_conversation(frame: &mut Frame, rect: Rect, state: &State, ui_state: &UiState) -> Result<()> {
     let layout = Layout::new(
         Direction::Vertical,
         [Constraint::Fill(1), Constraint::Length(10)],
@@ -129,14 +131,15 @@ pub fn draw_conversation(frame: &mut Frame, rect: Rect, state: &State, ui_state:
             .wrap(Wrap { trim: false })
             .bg(Color::Rgb(0, 0, 35))
             .fg(Color::Rgb(0, 255, 0)),
-        *layout.first().expect("ui index"),
+        *layout.first().context("ui index")?,
     );
 
     // Text input
-    frame.render_widget(ui_state.textarea.widget(), *layout.get(1).expect("ui index"));
+    frame.render_widget(ui_state.textarea.widget(), *layout.get(1).context("ui index")?);
+    Ok(())
 }
 
-pub fn draw_config(frame: &mut Frame, rect: Rect, state: &State, ui_state: &UiState) {
+pub fn draw_config(frame: &mut Frame, rect: Rect, state: &State, ui_state: &UiState) -> Result<()> {
     let main_layout = Layout::new(
         Direction::Vertical,
         [Constraint::Fill(1), Constraint::Fill(1)],
@@ -146,27 +149,28 @@ pub fn draw_config(frame: &mut Frame, rect: Rect, state: &State, ui_state: &UiSt
         Direction::Horizontal,
         [Constraint::Fill(1), Constraint::Fill(1)],
     )
-    .split(*main_layout.first().expect("ui index"));
+    .split(*main_layout.first().context("ui index")?);
 
     frame.render_widget(
         Paragraph::new(format!("{:#?}", state.config.chat))
             .wrap(Wrap { trim: false })
             .bg(Color::Rgb(0, 20, 35))
             .fg(Color::Rgb(125, 150, 0)),
-        *top_layout.first().expect("ui index"),
+        *top_layout.first().context("ui index")?,
     );
     frame.render_widget(
         Paragraph::new(format!("{:#?}", ui_state))
             .wrap(Wrap { trim: false })
             .bg(Color::Rgb(30, 0, 35))
             .fg(Color::Rgb(125, 150, 0)),
-        *top_layout.get(1).expect("ui index"),
+        *top_layout.get(1).context("ui index")?,
     );
     frame.render_widget(
         Paragraph::new(ui_state.feedback.as_str())
             .wrap(Wrap { trim: false })
             .bg(Color::Rgb(30, 30, 0))
             .fg(Color::Rgb(125, 150, 0)),
-        *main_layout.get(1).expect("ui index"),
+        *main_layout.get(1).context("ui index")?,
     );
+    Ok(())
 }
