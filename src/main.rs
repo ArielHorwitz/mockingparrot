@@ -42,6 +42,7 @@ async fn run() -> Result<()> {
 
 async fn run_app(terminal: &mut Terminal<impl Backend>, config: Config) -> Result<()> {
     let mut state = State::from_config(config.clone()).context("new app state")?;
+    let keymap = events::HotkeyMap::default();
     loop {
         terminal
             .draw(|frame| {
@@ -50,7 +51,7 @@ async fn run_app(terminal: &mut Terminal<impl Backend>, config: Config) -> Resul
                 }
             })
             .context("draw frame")?;
-        match events::handle(FRAME_DURATION_MS, &mut state)
+        match events::handle(FRAME_DURATION_MS, &mut state, &keymap)
             .await
             .context("handle events")?
         {
