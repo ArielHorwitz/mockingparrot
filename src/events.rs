@@ -94,7 +94,8 @@ async fn handle_conversation_keys(
             do_prompt(state, ui_state).await?;
         }
         (KeyCode::Char('e'), KeyModifiers::ALT) => {
-            let message_text = get_message_text_from_editor().context("get message text from editor")?;
+            let message_text =
+                get_message_text_from_editor().context("get message text from editor")?;
             ui_state.textarea.select_all();
             ui_state.textarea.cut();
             ui_state.textarea.insert_str(&message_text);
@@ -111,13 +112,24 @@ fn get_message_text_from_editor() -> Result<String> {
     let editor = std::env::var("EDITOR").context("get EDITOR environment variable")?;
     let user_home_dir = std::env::var("HOME").context("get HOME environment variable")?;
     let message_file = std::path::Path::new(&user_home_dir).join(MESSAGE_FILE);
-    let message_dir = message_file.parent().expect("get message file parent directory");
+    let message_dir = message_file
+        .parent()
+        .expect("get message file parent directory");
     std::fs::create_dir_all(message_dir).context("create directory for message file")?;
-    let editor_process_output = std::process::Command::new(editor).arg(&message_file).output().context("run editor")?;
+    let editor_process_output = std::process::Command::new(editor)
+        .arg(&message_file)
+        .output()
+        .context("run editor")?;
     if !editor_process_output.status.success() {
-        anyhow::bail!(format!("editor process failed: {}", editor_process_output.status));
+        anyhow::bail!(format!(
+            "editor process failed: {}",
+            editor_process_output.status
+        ));
     }
-    let message_text = std::fs::read_to_string(message_file).context("read message text from file")?.trim().to_owned();
+    let message_text = std::fs::read_to_string(message_file)
+        .context("read message text from file")?
+        .trim()
+        .to_owned();
     Ok(message_text)
 }
 
