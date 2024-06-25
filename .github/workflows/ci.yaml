@@ -5,7 +5,7 @@ on:
     branches: '**'
 
 jobs:
-  build:
+  ci:
     runs-on: ubuntu-latest
 
     steps:
@@ -19,8 +19,8 @@ jobs:
         components: clippy
         override: true
 
-    - name: Check code formatting with rustfmt
+    - name: Check code formatting
       run: cargo fmt -- --check
 
-    - name: Check clippy lints
+    - name: Check clippy
       run: cargo clippy -- -D warnings
