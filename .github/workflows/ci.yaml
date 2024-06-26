@@ -1,0 +1,26 @@
+name: Rust CI
+
+on:
+  push:
+    branches: '**'
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        components: clippy
+        override: true
+
+    - name: Check code formatting
+      run: cargo fmt -- --check
+
+    - name: Check clippy
+      run: cargo clippy -- -D warnings
