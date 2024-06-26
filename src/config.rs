@@ -4,6 +4,7 @@ use serde::Deserialize;
 pub struct Config {
     pub api: Api,
     pub chat: ChatConfig,
+    pub ui: Ui,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -35,4 +36,9 @@ pub struct ChatConfig {
     pub top_p: f32,
     pub frequency_penalty: f32,
     pub presence_penalty: f32,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct Ui {
+    pub editor_command: Vec<String>,
 }
