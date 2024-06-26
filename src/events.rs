@@ -109,7 +109,7 @@ async fn handle_conversation_keys(
     Ok(HandleEventResult::None)
 }
 
-fn get_message_text_from_editor(config: &crate::Config) -> Result<String> {
+fn get_message_text_from_editor(config: &crate::config::Config) -> Result<String> {
     let user_home_dir = std::env::var("HOME").context("get HOME environment variable")?;
     let message_file = std::path::Path::new(&user_home_dir).join(MESSAGE_FILE);
     let message_dir = message_file

@@ -3,18 +3,12 @@ use crossterm::ExecutableCommand;
 use ratatui::prelude::{Backend, CrosstermBackend, Terminal};
 use std::{io::stdout, path::Path};
 
-mod api;
-mod config;
-mod events;
-mod state;
-mod ui;
-
-use config::Config;
-use state::State;
+use hummingparrot::config::Config;
+use hummingparrot::events;
+use hummingparrot::state::State;
+use hummingparrot::ui;
 
 const FRAME_DURATION_MS: u64 = 50;
-const APP_TITLE: &str = "HummingParrot";
-const APP_TITLE_FULL: &str = "HummingParrot AI Chat Client";
 
 #[tokio::main]
 async fn main() {
