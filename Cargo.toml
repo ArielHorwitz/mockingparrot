@@ -13,3 +13,7 @@ serde = { version = "1.0.203", features = ["derive"] }
 tokio = { version = "1.38.0", features = ["rt", "rt-multi-thread", "macros"] }
 toml = "0.8.14"
 tui-textarea = "0.4.0"
+
+[lints.clippy]
+missing_errors_doc = "allow"
+pedantic = { level = "warn", priority = -1 }

@@ -40,18 +40,17 @@ async fn run() -> Result<()> {
     app_result
 }
 
-pub async fn run_app(terminal: &mut Terminal<impl Backend>, config: Config) -> Result<()> {
+async fn run_app(terminal: &mut Terminal<impl Backend>, config: Config) -> Result<()> {
     let mut state = State::from_config(config.clone()).context("new app state")?;
-    let mut ui_state = ui::UiState::default();
     loop {
         terminal
             .draw(|frame| {
-                if let Err(e) = ui::draw_ui_frame(frame, &state, &ui_state) {
+                if let Err(e) = ui::draw_frame(frame, &state) {
                     todo!("log error: {e}");
                 }
             })
             .context("draw frame")?;
-        match events::handle_events(FRAME_DURATION_MS, &mut state, &mut ui_state)
+        match events::handle(FRAME_DURATION_MS, &mut state)
             .await
             .context("handle events")?
         {

@@ -1,11 +1,18 @@
 use crate::{api::GptMessage, config::Config};
 use anyhow::{Context, Result};
+use ratatui::{prelude::Style, style::Color, widgets::ListState};
 use serde::{Deserialize, Serialize};
+use tui_textarea::TextArea;
 
-#[derive(Debug)]
 pub struct State {
     pub config: Config,
     pub conversation: Conversation,
+    pub tab: ViewTab,
+    pub status_bar_text: String,
+    pub prompt_textarea: TextArea<'static>,
+    pub debug_logs: Vec<String>,
+    pub debug_logs_scroll: u16,
+    pub system_instruction_selection: ListState,
 }
 
 impl State {
@@ -17,10 +24,50 @@ impl State {
             .context("no system instructions")?
             .message
             .clone();
-        Ok(Self {
+
+        let mut prompt_textarea = TextArea::default();
+        prompt_textarea.set_style(Style::new().bg(Color::Rgb(0, 25, 25)).fg(Color::White));
+        prompt_textarea.set_line_number_style(Style::new().bg(Color::Black).fg(Color::Cyan));
+        prompt_textarea.set_cursor_style(Style::new().bg(Color::Rgb(200, 200, 200)));
+        let mut state = Self {
             config,
             conversation: Conversation::new(system_instructions),
-        })
+            tab: ViewTab::Conversation,
+            status_bar_text: format!("Welcome to {}", crate::APP_TITLE),
+            prompt_textarea,
+            debug_logs: Vec::new(),
+            debug_logs_scroll: 0,
+            system_instruction_selection: ListState::default().with_selected(Some(0)),
+        };
+        state.add_debug_log("Start of debug logs");
+        Ok(state)
+    }
+
+    pub fn set_status_bar_text<T: Into<String>>(&mut self, text: T) {
+        self.status_bar_text = text.into();
+    }
+
+    pub fn add_debug_log<T: Into<String>>(&mut self, log: T) {
+        self.debug_logs
+            .push(format!("{} | {}", get_timestamp(), log.into()));
+    }
+}
+
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum ViewTab {
+    Conversation,
+    NewConversation,
+    Config,
+}
+
+impl ViewTab {
+    #[must_use]
+    pub fn next_tab(self) -> ViewTab {
+        match self {
+            ViewTab::Conversation => ViewTab::NewConversation,
+            ViewTab::NewConversation => ViewTab::Config,
+            ViewTab::Config => ViewTab::Conversation,
+        }
     }
 }
 
@@ -30,6 +77,7 @@ pub struct Conversation {
 }
 
 impl Conversation {
+    #[must_use]
     pub fn new(system_instructions: String) -> Self {
         Self {
             messages: vec![GptMessage::new_system_message(system_instructions)],
@@ -43,9 +91,13 @@ impl Conversation {
 
 impl std::fmt::Display for Conversation {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for message in self.messages.iter() {
+        for message in &self.messages {
             writeln!(f, "{message}")?;
         }
         std::fmt::Result::Ok(())
     }
+}
+
+fn get_timestamp() -> String {
+    format!("{}", chrono::Local::now().format("%Y-%m-%d %H:%M:%S%.3f"))
 }

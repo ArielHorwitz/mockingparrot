@@ -3,7 +3,7 @@ use serde::Deserialize;
 #[derive(Debug, Deserialize, Clone)]
 pub struct Config {
     pub api: Api,
-    pub chat: ChatConfig,
+    pub chat: Chat,
     pub ui: Ui,
     pub system: System,
 }
@@ -30,7 +30,7 @@ impl std::fmt::Display for ChatModel {
 }
 
 #[derive(Debug, Deserialize, Clone)]
-pub struct ChatConfig {
+pub struct Chat {
     pub model: ChatModel,
     pub max_tokens: i16,
     pub temperature: f32,

@@ -1,6 +1,5 @@
-use crate::api::GptMessage;
-use crate::state::{Conversation, State};
-use crate::ui::{UiState, ViewTab};
+use crate::api::{get_completion, GptMessage};
+use crate::state::{Conversation, State, ViewTab};
 use anyhow::{Context, Result};
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use std::process::Command;
@@ -15,64 +14,52 @@ pub enum HandleEventResult {
     Quit,
 }
 
-pub async fn handle_events(
-    timeout: u64,
-    state: &mut State,
-    ui_state: &mut UiState<'_>,
-) -> Result<HandleEventResult> {
+pub async fn handle(timeout: u64, state: &mut State) -> Result<HandleEventResult> {
     if !event::poll(std::time::Duration::from_millis(timeout)).context("poll terminal events")? {
         return Ok(HandleEventResult::None);
     };
     let terminal_event = event::read().context("read terminal event")?;
     match terminal_event {
-        Event::Key(key_event) => return handle_keys(key_event, state, ui_state).await,
-        Event::FocusGained => ui_state.status_bar_text = String::from("focus gained"),
-        Event::FocusLost => ui_state.status_bar_text = String::from("focus lost"),
-        Event::Mouse(ev) => ui_state.status_bar_text = format!("mouse {ev:#?}"),
-        Event::Paste(p) => ui_state.status_bar_text = format!("paste {p:#?}"),
-        Event::Resize(x, y) => ui_state.status_bar_text = format!("resize {x}x{y}"),
+        Event::Key(key_event) => return handle_keys(key_event, state).await,
+        Event::FocusGained => state.add_debug_log("focus gained"),
+        Event::FocusLost => state.add_debug_log("focus lost"),
+        Event::Mouse(ev) => state.add_debug_log(format!("mouse {ev:#?}")),
+        Event::Paste(p) => state.add_debug_log(format!("paste {p:#?}")),
+        Event::Resize(x, y) => state.add_debug_log(format!("resize {x}x{y}")),
     };
     Ok(HandleEventResult::None)
 }
 
-async fn handle_keys(
-    key_event: KeyEvent,
-    state: &mut State,
-    ui_state: &mut UiState<'_>,
-) -> Result<HandleEventResult> {
+async fn handle_keys(key_event: KeyEvent, state: &mut State) -> Result<HandleEventResult> {
     if key_event.kind != KeyEventKind::Press {
         return Ok(HandleEventResult::None);
     }
-    ui_state.key_event_debug = format!("{:?} {:?}", key_event.modifiers, key_event.code);
     match (key_event.code, key_event.modifiers) {
         (KeyCode::Char('q'), KeyModifiers::CONTROL) => return Ok(HandleEventResult::Quit),
-        (KeyCode::BackTab, KeyModifiers::SHIFT) => ui_state.tab = ui_state.tab.next_tab(),
-        (KeyCode::F(1), _) => ui_state.tab = ViewTab::Conversation,
-        (KeyCode::F(2), _) => ui_state.tab = ViewTab::Config,
+        (KeyCode::BackTab, KeyModifiers::SHIFT) => state.tab = state.tab.next_tab(),
+        (KeyCode::F(1), _) => state.tab = ViewTab::Conversation,
+        (KeyCode::F(2), _) => state.tab = ViewTab::Config,
         _ => {
-            return match ui_state.tab {
-                ViewTab::Conversation => handle_conversation_keys(key_event, state, ui_state)
-                    .await
-                    .context("handle conversation keys"),
-                ViewTab::NewConversation => {
-                    Ok(handle_new_conversation_keys(key_event, state, ui_state))
+            match state.tab {
+                ViewTab::Conversation => {
+                    return handle_conversation_keys(key_event, state)
+                        .await
+                        .context("handle conversation keys")
                 }
-                ViewTab::Config => handle_config_keys(key_event, state, ui_state)
-                    .await
-                    .context("handle config keys"),
+                ViewTab::NewConversation => handle_new_conversation_keys(key_event, state),
+                ViewTab::Config => handle_config_keys(key_event, state),
             };
         }
     };
     Ok(HandleEventResult::None)
 }
 
-async fn handle_config_keys(
-    key_event: KeyEvent,
-    state: &mut State,
-    ui_state: &mut UiState<'_>,
-) -> Result<HandleEventResult> {
+fn handle_config_keys(key_event: KeyEvent, state: &mut State) -> HandleEventResult {
     match (key_event.code, key_event.modifiers) {
-        (KeyCode::Char('d'), KeyModifiers::NONE) => ui_state.debug = !ui_state.debug,
+        (KeyCode::Up, KeyModifiers::NONE) => {
+            state.debug_logs_scroll = state.debug_logs_scroll.saturating_sub(1);
+        }
+        (KeyCode::Down, KeyModifiers::NONE) => state.debug_logs_scroll += 1,
         (KeyCode::Char('t'), KeyModifiers::NONE) => state.config.chat.temperature += 0.05,
         (KeyCode::Char('T'), KeyModifiers::SHIFT) => state.config.chat.temperature -= 0.05,
         (KeyCode::Char('p'), KeyModifiers::NONE) => state.config.chat.top_p += 0.05,
@@ -83,53 +70,49 @@ async fn handle_config_keys(
         (KeyCode::Char('R'), KeyModifiers::SHIFT) => state.config.chat.presence_penalty -= 0.05,
         _ => (),
     };
-    Ok(HandleEventResult::None)
+    HandleEventResult::None
 }
 
-fn handle_new_conversation_keys(
-    key_event: KeyEvent,
-    state: &mut State,
-    ui_state: &mut UiState<'_>,
-) -> HandleEventResult {
+fn handle_new_conversation_keys(key_event: KeyEvent, state: &mut State) -> HandleEventResult {
     match (key_event.code, key_event.modifiers) {
-        (KeyCode::Esc, KeyModifiers::NONE) => ui_state.tab = ViewTab::Conversation,
+        (KeyCode::Esc, KeyModifiers::NONE) => state.tab = ViewTab::Conversation,
         (KeyCode::Enter, KeyModifiers::NONE) => {
-            if let Some(instruction_index) = ui_state.system_instruction_selection.selected() {
+            if let Some(instruction_index) = state.system_instruction_selection.selected() {
                 if let Some(system_instructions) =
                     state.config.system.instructions.get(instruction_index)
                 {
                     state.conversation = Conversation::new(system_instructions.message.clone());
                 };
             }
-            ui_state.tab = ViewTab::Conversation;
+            state.tab = ViewTab::Conversation;
         }
         (KeyCode::Down, KeyModifiers::NONE) => {
-            let mut new_selection = ui_state
-                .system_instruction_selection
-                .selected()
-                .unwrap_or(0)
-                + 1;
+            let mut new_selection = state.system_instruction_selection.selected().unwrap_or(0) + 1;
             if new_selection >= state.config.system.instructions.len() {
                 new_selection = 0;
             }
-            ui_state
+            state
                 .system_instruction_selection
                 .select(Some(new_selection));
-            ui_state.status_bar_text =
-                format!("{:?}", ui_state.system_instruction_selection.selected());
+            state.add_debug_log(format!(
+                "selected preset {:?}",
+                state.system_instruction_selection.selected()
+            ));
         }
         (KeyCode::Up, KeyModifiers::NONE) => {
-            let new_selection = ui_state
+            let new_selection = state
                 .system_instruction_selection
                 .selected()
                 .unwrap_or(0)
                 .checked_sub(1)
                 .unwrap_or(state.config.system.instructions.len() - 1);
-            ui_state
+            state
                 .system_instruction_selection
                 .select(Some(new_selection));
-            ui_state.status_bar_text =
-                format!("{:?}", ui_state.system_instruction_selection.selected());
+            state.add_debug_log(format!(
+                "selected preset {:?}",
+                state.system_instruction_selection.selected()
+            ));
         }
         _ => (),
     };
@@ -139,25 +122,24 @@ fn handle_new_conversation_keys(
 async fn handle_conversation_keys(
     key_event: KeyEvent,
     state: &mut State,
-    ui_state: &mut UiState<'_>,
 ) -> Result<HandleEventResult> {
     match (key_event.code, key_event.modifiers) {
-        (KeyCode::Char('n'), KeyModifiers::CONTROL) => ui_state.tab = ViewTab::NewConversation,
+        (KeyCode::Char('n'), KeyModifiers::CONTROL) => state.tab = ViewTab::NewConversation,
         (KeyCode::Enter, KeyModifiers::ALT) => {
-            let message = GptMessage::new_user_message(ui_state.textarea.lines().join("\n"));
+            let message = GptMessage::new_user_message(state.prompt_textarea.lines().join("\n"));
             state.conversation.add_message(message);
-            do_prompt(state, ui_state).await?;
+            do_prompt(state).await?;
         }
         (KeyCode::Char('e'), KeyModifiers::ALT) => {
             let message_text = get_message_text_from_editor(&state.config)
                 .context("get message text from editor")?;
-            ui_state.textarea.select_all();
-            ui_state.textarea.cut();
-            ui_state.textarea.insert_str(&message_text);
+            state.prompt_textarea.select_all();
+            state.prompt_textarea.cut();
+            state.prompt_textarea.insert_str(&message_text);
             return Ok(HandleEventResult::Redraw);
         }
         _ => {
-            ui_state.textarea.input(key_event);
+            state.prompt_textarea.input(key_event);
         }
     };
     Ok(HandleEventResult::None)
@@ -190,27 +172,28 @@ fn get_message_text_from_editor(config: &crate::config::Config) -> Result<String
     Ok(message_text)
 }
 
-async fn do_prompt(state: &mut State, ui_state: &mut UiState<'_>) -> Result<()> {
-    let raw_response =
-        crate::api::call_api(&reqwest::Client::new(), &state.config, &state.conversation)
-            .await
-            .context("decode response");
-    if let Ok(response) = raw_response {
-        let message = &response
-            .choices
-            .first()
-            .context("missing response choices")?
-            .message;
-        state.conversation.add_message(message.clone());
-        ui_state.status_bar_text = format!("AI responded. {}", response.usage);
-    } else {
-        API_ERROR_FEEDBACK.clone_into(&mut ui_state.status_bar_text);
-        state
-            .conversation
-            .add_message(GptMessage::new_system_message(
-                API_ERROR_SYSTEM_MESSAGE.to_owned(),
-            ));
-        ui_state.feedback = format!("{raw_response:#?}");
+async fn do_prompt(state: &mut State) -> Result<()> {
+    let client = reqwest::Client::new();
+    let raw_response = get_completion(&client, &state.config, &state.conversation).await;
+    match raw_response {
+        Ok(response) => {
+            let message = &response
+                .choices
+                .first()
+                .context("missing response choices")?
+                .message;
+            state.conversation.add_message(message.clone());
+            state.set_status_bar_text(format!("AI responded. {}", response.usage));
+        }
+        Err(error) => {
+            state.set_status_bar_text(API_ERROR_FEEDBACK);
+            state
+                .conversation
+                .add_message(GptMessage::new_system_message(
+                    API_ERROR_SYSTEM_MESSAGE.to_owned(),
+                ));
+            state.debug_logs.push(format!("{error:#?}"));
+        }
     }
     Ok(())
 }
