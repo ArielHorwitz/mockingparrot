@@ -27,7 +27,7 @@ impl<'a> Default for UiState<'a> {
             status_bar_text: format!("Welcome to {}", crate::APP_TITLE),
             textarea: get_textarea(),
             feedback: "Debug logs empty.".to_owned(),
-            system_instruction_selection: ListState::default(),
+            system_instruction_selection: ListState::default().with_selected(Some(0)),
             debug: false,
             key_event_debug: Default::default(),
         }
