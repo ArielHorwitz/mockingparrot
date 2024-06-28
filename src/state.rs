@@ -13,7 +13,7 @@ impl State {
         let system_instructions = config
             .system
             .instructions
-            .get(0)
+            .first()
             .context("no system instructions")?
             .message
             .clone();
