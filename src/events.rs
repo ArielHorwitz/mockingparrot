@@ -1,5 +1,5 @@
 use crate::api::GptMessage;
-use crate::state::State;
+use crate::state::{Conversation, State};
 use crate::ui::{UiState, ViewTab};
 use anyhow::{Context, Result};
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
@@ -54,6 +54,9 @@ async fn handle_keys(
                 ViewTab::Conversation => handle_conversation_keys(key_event, state, ui_state)
                     .await
                     .context("handle conversation keys"),
+                ViewTab::NewConversation => {
+                    Ok(handle_new_conversation_keys(key_event, state, ui_state))
+                }
                 ViewTab::Config => handle_config_keys(key_event, state, ui_state)
                     .await
                     .context("handle config keys"),
@@ -83,12 +86,63 @@ async fn handle_config_keys(
     Ok(HandleEventResult::None)
 }
 
+fn handle_new_conversation_keys(
+    key_event: KeyEvent,
+    state: &mut State,
+    ui_state: &mut UiState<'_>,
+) -> HandleEventResult {
+    match (key_event.code, key_event.modifiers) {
+        (KeyCode::Esc, KeyModifiers::NONE) => ui_state.tab = ViewTab::Conversation,
+        (KeyCode::Enter, KeyModifiers::NONE) => {
+            if let Some(instruction_index) = ui_state.system_instruction_selection.selected() {
+                if let Some(system_instructions) =
+                    state.config.system.instructions.get(instruction_index)
+                {
+                    state.conversation = Conversation::new(system_instructions.message.clone());
+                };
+            }
+            ui_state.tab = ViewTab::Conversation;
+        }
+        (KeyCode::Down, KeyModifiers::NONE) => {
+            let mut new_selection = ui_state
+                .system_instruction_selection
+                .selected()
+                .unwrap_or(0)
+                + 1;
+            if new_selection >= state.config.system.instructions.len() {
+                new_selection = 0;
+            }
+            ui_state
+                .system_instruction_selection
+                .select(Some(new_selection));
+            ui_state.status_bar_text =
+                format!("{:?}", ui_state.system_instruction_selection.selected());
+        }
+        (KeyCode::Up, KeyModifiers::NONE) => {
+            let new_selection = ui_state
+                .system_instruction_selection
+                .selected()
+                .unwrap_or(0)
+                .checked_sub(1)
+                .unwrap_or(state.config.system.instructions.len() - 1);
+            ui_state
+                .system_instruction_selection
+                .select(Some(new_selection));
+            ui_state.status_bar_text =
+                format!("{:?}", ui_state.system_instruction_selection.selected());
+        }
+        _ => (),
+    };
+    HandleEventResult::None
+}
+
 async fn handle_conversation_keys(
     key_event: KeyEvent,
     state: &mut State,
     ui_state: &mut UiState<'_>,
 ) -> Result<HandleEventResult> {
     match (key_event.code, key_event.modifiers) {
+        (KeyCode::Char('n'), KeyModifiers::CONTROL) => ui_state.tab = ViewTab::NewConversation,
         (KeyCode::Enter, KeyModifiers::ALT) => {
             let message = GptMessage::new_user_message(ui_state.textarea.lines().join("\n"));
             state.conversation.add_message(message);

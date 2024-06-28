@@ -3,7 +3,7 @@ use anyhow::{Context, Result};
 use ratatui::{
     prelude::{Constraint, Direction, Layout, Rect, Style, Stylize},
     style::Color,
-    widgets::{Block, Paragraph, Wrap},
+    widgets::{Block, List, ListState, Paragraph, Wrap},
     Frame,
 };
 use tui_textarea::TextArea;
@@ -15,6 +15,7 @@ pub struct UiState<'a> {
     pub status_bar_text: String,
     pub textarea: TextArea<'a>,
     pub feedback: String,
+    pub system_instruction_selection: ListState,
     pub debug: bool,
     pub key_event_debug: String,
 }
@@ -26,6 +27,7 @@ impl<'a> Default for UiState<'a> {
             status_bar_text: format!("Welcome to {}", crate::APP_TITLE),
             textarea: get_textarea(),
             feedback: "Debug logs empty.".to_owned(),
+            system_instruction_selection: ListState::default(),
             debug: false,
             key_event_debug: Default::default(),
         }
@@ -49,13 +51,15 @@ pub fn get_textarea() -> TextArea<'static> {
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum ViewTab {
     Conversation,
+    NewConversation,
     Config,
 }
 
 impl ViewTab {
     pub fn next_tab(self) -> ViewTab {
         match self {
-            ViewTab::Conversation => ViewTab::Config,
+            ViewTab::Conversation => ViewTab::NewConversation,
+            ViewTab::NewConversation => ViewTab::Config,
             ViewTab::Config => ViewTab::Conversation,
         }
     }
@@ -110,6 +114,9 @@ pub fn draw_ui_frame(frame: &mut Frame, state: &State, ui_state: &UiState) -> Re
         ViewTab::Conversation => {
             draw_conversation(frame, *layout.get(1).context("ui index")?, state, ui_state)?
         }
+        ViewTab::NewConversation => {
+            new_conversation(frame, *layout.get(1).context("ui index")?, state, ui_state)?;
+        }
         ViewTab::Config => {
             draw_config(frame, *layout.get(1).context("ui index")?, state, ui_state)?
         }
@@ -148,6 +155,24 @@ pub fn draw_conversation(
         ui_state.textarea.widget(),
         *layout.get(1).context("ui index")?,
     );
+    Ok(())
+}
+
+fn new_conversation(
+    frame: &mut Frame,
+    rect: Rect,
+    state: &State,
+    ui_state: &UiState,
+) -> Result<()> {
+    let list_items = state
+        .config
+        .system
+        .instructions
+        .iter()
+        .map(|i| format!(">> {}\n{}", i.name, i.message));
+    let list = List::new(list_items).highlight_style(Color::LightGreen);
+    let mut list_state = ui_state.system_instruction_selection.clone();
+    frame.render_stateful_widget(list, rect, &mut list_state);
     Ok(())
 }
 

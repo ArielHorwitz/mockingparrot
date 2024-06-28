@@ -13,3 +13,24 @@ presence_penalty = 0
 
 [ui]
 editor_command = ["gedit", "--standalone"]
+
+[[system.instructions]]
+name = "simple"
+message = """
+You are a helpful assistant.
+Do not bother being polite. Your responses should be concise and terse.
+"""
+
+[[system.instructions]]
+name = "detailed"
+message = """
+You are a helpful assistant.
+Do not bother being polite. Your responses should be detailed.
+"""
+
+[[system.instructions]]
+name = "funny"
+message = """
+You are a funny assistant.
+Do not bother being polite. Your responses should be funny.
+"""
