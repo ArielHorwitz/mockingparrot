@@ -16,10 +16,6 @@ pub struct State {
 }
 
 impl State {
-    /// Returns a `State` object from a given `Config` object.
-    ///
-    /// # Errors
-    /// Will error if no system instructions are present in the config.
     pub fn from_config(config: Config) -> Result<Self> {
         let system_instructions = config
             .system

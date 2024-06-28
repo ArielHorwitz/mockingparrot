@@ -14,12 +14,7 @@ pub enum HandleEventResult {
     Quit,
 }
 
-/// Handle terminal events
-///
-/// # Errors
-/// An error with a description is returned in case of failure.
-#[allow(clippy::module_name_repetitions)]
-pub async fn handle_events(timeout: u64, state: &mut State) -> Result<HandleEventResult> {
+pub async fn handle(timeout: u64, state: &mut State) -> Result<HandleEventResult> {
     if !event::poll(std::time::Duration::from_millis(timeout)).context("poll terminal events")? {
         return Ok(HandleEventResult::None);
     };

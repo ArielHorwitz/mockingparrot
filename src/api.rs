@@ -97,11 +97,6 @@ pub struct GptResponse {
     pub system_fingerprint: String,
 }
 
-#[allow(clippy::doc_markdown)]
-/// Call OpenAI's ChatGPT completions endpoint.
-///
-/// # Errors
-/// Returns an error if the request fails to send or the response parsing fails.
 pub async fn get_completion(
     client: &Client,
     config: &Config,

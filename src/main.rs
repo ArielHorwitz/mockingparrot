@@ -50,7 +50,7 @@ async fn run_app(terminal: &mut Terminal<impl Backend>, config: Config) -> Resul
                 }
             })
             .context("draw frame")?;
-        match events::handle_events(FRAME_DURATION_MS, &mut state)
+        match events::handle(FRAME_DURATION_MS, &mut state)
             .await
             .context("handle events")?
         {

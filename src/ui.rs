@@ -9,10 +9,6 @@ use ratatui::{
 
 const STATUSBAR_HELP_TEXT: &str = "Ctrl+q - Quit, F1 - conversation, F2 - config/debug";
 
-/// Draw the UI frame.
-///
-/// # Errors
-/// An error with a description is returned in case of failure.
 pub fn draw_frame(frame: &mut Frame, state: &State) -> Result<()> {
     let layout = Layout::new(
         Direction::Vertical,
