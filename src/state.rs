@@ -1,11 +1,19 @@
 use crate::{api::GptMessage, config::Config};
 use anyhow::{Context, Result};
+use ratatui::{prelude::Style, style::Color, widgets::ListState};
 use serde::{Deserialize, Serialize};
+use tui_textarea::TextArea;
 
-#[derive(Debug)]
 pub struct State {
     pub config: Config,
     pub conversation: Conversation,
+    pub tab: ViewTab,
+    pub status_bar_text: String,
+    pub prompt_textarea: TextArea<'static>,
+    pub debug_logs: Vec<String>,
+    pub system_instruction_selection: ListState,
+    pub debug: bool,
+    pub key_event_debug: String,
 }
 
 impl State {
@@ -17,10 +25,47 @@ impl State {
             .context("no system instructions")?
             .message
             .clone();
+
+        let mut prompt_textarea = TextArea::default();
+        prompt_textarea.set_style(Style::new().bg(Color::Rgb(0, 25, 25)).fg(Color::White));
+        prompt_textarea.set_line_number_style(Style::new().bg(Color::Black).fg(Color::Cyan));
+        prompt_textarea.set_cursor_style(Style::new().bg(Color::Rgb(200, 200, 200)));
         Ok(Self {
             config,
             conversation: Conversation::new(system_instructions),
+            tab: ViewTab::Conversation,
+            status_bar_text: format!("Welcome to {}", crate::APP_TITLE),
+            prompt_textarea,
+            debug_logs: vec!["Debug logs empty.".to_string()],
+            system_instruction_selection: ListState::default().with_selected(Some(0)),
+            debug: false,
+            key_event_debug: Default::default(),
         })
+    }
+
+    pub fn set_status_bar_text<T: Into<String>>(&mut self, text: T) {
+        self.status_bar_text = text.into();
+    }
+
+    pub fn add_debug_log<T: Into<String>>(&mut self, log: T) {
+        self.debug_logs.push(log.into());
+    }
+}
+
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum ViewTab {
+    Conversation,
+    NewConversation,
+    Config,
+}
+
+impl ViewTab {
+    pub fn next_tab(self) -> ViewTab {
+        match self {
+            ViewTab::Conversation => ViewTab::NewConversation,
+            ViewTab::NewConversation => ViewTab::Config,
+            ViewTab::Config => ViewTab::Conversation,
+        }
     }
 }
 

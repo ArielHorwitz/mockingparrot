@@ -1,71 +1,15 @@
-use crate::state::State;
+use crate::state::{State, ViewTab};
 use anyhow::{Context, Result};
 use ratatui::{
-    prelude::{Constraint, Direction, Layout, Rect, Style, Stylize},
+    prelude::{Constraint, Direction, Layout, Rect, Stylize},
     style::Color,
-    widgets::{Block, List, ListState, Paragraph, Wrap},
+    widgets::{Block, List, Paragraph, Wrap},
     Frame,
 };
-use tui_textarea::TextArea;
 
 const STATUSBAR_HELP_TEXT: &str = "Ctrl+q - Quit, F1 - conversation, F2 - config/debug";
 
-pub struct UiState {
-    pub tab: ViewTab,
-    pub status_bar_text: String,
-    pub textarea: TextArea<'static>,
-    pub feedback: String,
-    pub system_instruction_selection: ListState,
-    pub debug: bool,
-    pub key_event_debug: String,
-}
-
-impl Default for UiState {
-    fn default() -> Self {
-        Self {
-            tab: ViewTab::Conversation,
-            status_bar_text: format!("Welcome to {}", crate::APP_TITLE),
-            textarea: get_textarea(),
-            feedback: "Debug logs empty.".to_owned(),
-            system_instruction_selection: ListState::default().with_selected(Some(0)),
-            debug: false,
-            key_event_debug: Default::default(),
-        }
-    }
-}
-
-impl std::fmt::Debug for UiState {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Debug mode: {:?}\n{}", self.debug, self.key_event_debug)
-    }
-}
-
-pub fn get_textarea() -> TextArea<'static> {
-    let mut textarea = TextArea::default();
-    textarea.set_style(Style::new().bg(Color::Rgb(0, 25, 25)).fg(Color::White));
-    textarea.set_line_number_style(Style::new().bg(Color::Black).fg(Color::Cyan));
-    textarea.set_cursor_style(Style::new().bg(Color::Rgb(200, 200, 200)));
-    textarea
-}
-
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub enum ViewTab {
-    Conversation,
-    NewConversation,
-    Config,
-}
-
-impl ViewTab {
-    pub fn next_tab(self) -> ViewTab {
-        match self {
-            ViewTab::Conversation => ViewTab::NewConversation,
-            ViewTab::NewConversation => ViewTab::Config,
-            ViewTab::Config => ViewTab::Conversation,
-        }
-    }
-}
-
-pub fn draw_ui_frame(frame: &mut Frame, state: &State, ui_state: &UiState) -> Result<()> {
+pub fn draw_ui_frame(frame: &mut Frame, state: &State) -> Result<()> {
     let layout = Layout::new(
         Direction::Vertical,
         [
@@ -90,14 +34,14 @@ pub fn draw_ui_frame(frame: &mut Frame, state: &State, ui_state: &UiState) -> Re
     // Status bar
     let now = {
         let now = chrono::Local::now();
-        if ui_state.debug {
+        if state.debug {
             format!("{}", now.format("%Y-%m-%d %H:%M:%S%.3f"))
         } else {
             format!("{}", now.format("%Y-%m-%d %H:%M:%S"))
         }
     };
     frame.render_widget(
-        Paragraph::new(ui_state.status_bar_text.as_str())
+        Paragraph::new(state.status_bar_text.as_str())
             .bg(Color::DarkGray)
             .fg(Color::LightGreen),
         *layout.get(2).context("ui index")?,
@@ -110,26 +54,19 @@ pub fn draw_ui_frame(frame: &mut Frame, state: &State, ui_state: &UiState) -> Re
     );
 
     // Main UI
-    match ui_state.tab {
+    match state.tab {
         ViewTab::Conversation => {
-            draw_conversation(frame, *layout.get(1).context("ui index")?, state, ui_state)?
+            draw_conversation(frame, *layout.get(1).context("ui index")?, state)?
         }
         ViewTab::NewConversation => {
-            new_conversation(frame, *layout.get(1).context("ui index")?, state, ui_state)?;
+            new_conversation(frame, *layout.get(1).context("ui index")?, state)?;
         }
-        ViewTab::Config => {
-            draw_config(frame, *layout.get(1).context("ui index")?, state, ui_state)?
-        }
+        ViewTab::Config => draw_config(frame, *layout.get(1).context("ui index")?, state)?,
     };
     Ok(())
 }
 
-pub fn draw_conversation(
-    frame: &mut Frame,
-    rect: Rect,
-    state: &State,
-    ui_state: &UiState,
-) -> Result<()> {
+pub fn draw_conversation(frame: &mut Frame, rect: Rect, state: &State) -> Result<()> {
     let layout = Layout::new(
         Direction::Vertical,
         [Constraint::Fill(1), Constraint::Length(10)],
@@ -152,18 +89,13 @@ pub fn draw_conversation(
 
     // Text input
     frame.render_widget(
-        ui_state.textarea.widget(),
+        state.prompt_textarea.widget(),
         *layout.get(1).context("ui index")?,
     );
     Ok(())
 }
 
-fn new_conversation(
-    frame: &mut Frame,
-    rect: Rect,
-    state: &State,
-    ui_state: &UiState,
-) -> Result<()> {
+fn new_conversation(frame: &mut Frame, rect: Rect, state: &State) -> Result<()> {
     let list_items = state
         .config
         .system
@@ -171,39 +103,27 @@ fn new_conversation(
         .iter()
         .map(|i| format!(">> {}\n{}", i.name, i.message));
     let list = List::new(list_items).highlight_style(Color::LightGreen);
-    let mut list_state = ui_state.system_instruction_selection.clone();
+    let mut list_state = state.system_instruction_selection.clone();
     frame.render_stateful_widget(list, rect, &mut list_state);
     Ok(())
 }
 
-pub fn draw_config(frame: &mut Frame, rect: Rect, state: &State, ui_state: &UiState) -> Result<()> {
+pub fn draw_config(frame: &mut Frame, rect: Rect, state: &State) -> Result<()> {
     let main_layout = Layout::new(
         Direction::Vertical,
         [Constraint::Fill(1), Constraint::Fill(1)],
     )
     .split(rect);
-    let top_layout = Layout::new(
-        Direction::Horizontal,
-        [Constraint::Fill(1), Constraint::Fill(1)],
-    )
-    .split(*main_layout.first().context("ui index")?);
 
     frame.render_widget(
         Paragraph::new(format!("{:#?}", state.config.chat))
             .wrap(Wrap { trim: false })
             .bg(Color::Rgb(0, 20, 35))
             .fg(Color::Rgb(125, 150, 0)),
-        *top_layout.first().context("ui index")?,
+        *main_layout.first().context("ui index")?,
     );
     frame.render_widget(
-        Paragraph::new(format!("{:#?}", ui_state))
-            .wrap(Wrap { trim: false })
-            .bg(Color::Rgb(30, 0, 35))
-            .fg(Color::Rgb(125, 150, 0)),
-        *top_layout.get(1).context("ui index")?,
-    );
-    frame.render_widget(
-        Paragraph::new(ui_state.feedback.as_str())
+        Paragraph::new(state.debug_logs.join("\n"))
             .wrap(Wrap { trim: false })
             .bg(Color::Rgb(30, 30, 0))
             .fg(Color::Rgb(125, 150, 0)),
