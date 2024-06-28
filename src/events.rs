@@ -1,4 +1,4 @@
-use crate::api::GptMessage;
+use crate::api::{get_completion, GptMessage};
 use crate::state::{Conversation, State, ViewTab};
 use anyhow::{Context, Result};
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
@@ -173,26 +173,27 @@ fn get_message_text_from_editor(config: &crate::config::Config) -> Result<String
 }
 
 async fn do_prompt(state: &mut State) -> Result<()> {
-    let raw_response =
-        crate::api::get_completion(&reqwest::Client::new(), &state.config, &state.conversation)
-            .await
-            .context("decode response");
-    if let Ok(response) = raw_response {
-        let message = &response
-            .choices
-            .first()
-            .context("missing response choices")?
-            .message;
-        state.conversation.add_message(message.clone());
-        state.set_status_bar_text(format!("AI responded. {}", response.usage));
-    } else {
-        state.set_status_bar_text(API_ERROR_FEEDBACK);
-        state
-            .conversation
-            .add_message(GptMessage::new_system_message(
-                API_ERROR_SYSTEM_MESSAGE.to_owned(),
-            ));
-        state.debug_logs.push(format!("{raw_response:#?}"));
+    let client = reqwest::Client::new();
+    let raw_response = get_completion(&client, &state.config, &state.conversation).await;
+    match raw_response {
+        Ok(response) => {
+            let message = &response
+                .choices
+                .first()
+                .context("missing response choices")?
+                .message;
+            state.conversation.add_message(message.clone());
+            state.set_status_bar_text(format!("AI responded. {}", response.usage));
+        }
+        Err(error) => {
+            state.set_status_bar_text(API_ERROR_FEEDBACK);
+            state
+                .conversation
+                .add_message(GptMessage::new_system_message(
+                    API_ERROR_SYSTEM_MESSAGE.to_owned(),
+                ));
+            state.debug_logs.push(format!("{error:#?}"));
+        }
     }
     Ok(())
 }
