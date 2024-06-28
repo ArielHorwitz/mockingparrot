@@ -14,7 +14,6 @@ pub enum HandleEventResult {
     Quit,
 }
 
-
 /// Handle terminal events
 ///
 /// # Errors
@@ -40,7 +39,6 @@ async fn handle_keys(key_event: KeyEvent, state: &mut State) -> Result<HandleEve
     if key_event.kind != KeyEventKind::Press {
         return Ok(HandleEventResult::None);
     }
-    state.key_event_debug = format!("{:?} {:?}", key_event.modifiers, key_event.code);
     match (key_event.code, key_event.modifiers) {
         (KeyCode::Char('q'), KeyModifiers::CONTROL) => return Ok(HandleEventResult::Quit),
         (KeyCode::BackTab, KeyModifiers::SHIFT) => state.tab = state.tab.next_tab(),
@@ -48,9 +46,11 @@ async fn handle_keys(key_event: KeyEvent, state: &mut State) -> Result<HandleEve
         (KeyCode::F(2), _) => state.tab = ViewTab::Config,
         _ => {
             match state.tab {
-                ViewTab::Conversation => return handle_conversation_keys(key_event, state)
-                    .await
-                    .context("handle conversation keys"),
+                ViewTab::Conversation => {
+                    return handle_conversation_keys(key_event, state)
+                        .await
+                        .context("handle conversation keys")
+                }
                 ViewTab::NewConversation => handle_new_conversation_keys(key_event, state),
                 ViewTab::Config => handle_config_keys(key_event, state),
             };
@@ -65,7 +65,6 @@ fn handle_config_keys(key_event: KeyEvent, state: &mut State) -> HandleEventResu
             state.debug_logs_scroll = state.debug_logs_scroll.saturating_sub(1);
         }
         (KeyCode::Down, KeyModifiers::NONE) => state.debug_logs_scroll += 1,
-        (KeyCode::Char('d'), KeyModifiers::NONE) => state.debug = !state.debug,
         (KeyCode::Char('t'), KeyModifiers::NONE) => state.config.chat.temperature += 0.05,
         (KeyCode::Char('T'), KeyModifiers::SHIFT) => state.config.chat.temperature -= 0.05,
         (KeyCode::Char('p'), KeyModifiers::NONE) => state.config.chat.top_p += 0.05,

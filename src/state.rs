@@ -13,8 +13,6 @@ pub struct State {
     pub debug_logs: Vec<String>,
     pub debug_logs_scroll: u16,
     pub system_instruction_selection: ListState,
-    pub debug: bool,
-    pub key_event_debug: String,
 }
 
 impl State {
@@ -44,8 +42,6 @@ impl State {
             debug_logs: Vec::new(),
             debug_logs_scroll: 0,
             system_instruction_selection: ListState::default().with_selected(Some(0)),
-            debug: false,
-            key_event_debug: String::default(),
         };
         state.add_debug_log("Start of debug logs");
         Ok(state)
@@ -107,6 +103,5 @@ impl std::fmt::Display for Conversation {
 }
 
 fn get_timestamp() -> String {
-    let now = chrono::Local::now();
-    format!("{}", now.format("%Y-%m-%d %H:%M:%S%.3f"))
+    format!("{}", chrono::Local::now().format("%Y-%m-%d %H:%M:%S%.3f"))
 }

@@ -24,6 +24,10 @@ pub fn draw_frame(frame: &mut Frame, state: &State) -> Result<()> {
         ],
     )
     .split(frame.size());
+    let title_layout = *layout.first().context("ui index")?;
+    let main_layout = *layout.get(1).context("ui index")?;
+    let status_bar_layout = *layout.get(2).context("ui index")?;
+    let help_bar_layout = *layout.get(3).context("ui index")?;
 
     // Title bar
     frame.render_widget(
@@ -32,33 +36,25 @@ pub fn draw_frame(frame: &mut Frame, state: &State) -> Result<()> {
             .bg(Color::Blue)
             .fg(Color::LightGreen)
             .bold(),
-        *layout.first().context("ui index")?,
+        title_layout,
     );
 
     // Status bar
-    let now = {
-        let now = chrono::Local::now();
-        if state.debug {
-            format!("{}", now.format("%Y-%m-%d %H:%M:%S%.3f"))
-        } else {
-            format!("{}", now.format("%Y-%m-%d %H:%M:%S"))
-        }
-    };
+    let now = format!("{}", chrono::Local::now().format("%Y-%m-%d %H:%M:%S"));
     frame.render_widget(
         Paragraph::new(state.status_bar_text.as_str())
             .bg(Color::DarkGray)
             .fg(Color::LightGreen),
-        *layout.get(2).context("ui index")?,
+        status_bar_layout,
     );
     frame.render_widget(
         Paragraph::new(format!("{STATUSBAR_HELP_TEXT} | {now}"))
             .bg(Color::Black)
             .fg(Color::Green),
-        *layout.get(3).context("ui index")?,
+        help_bar_layout,
     );
 
     // Main UI
-    let main_layout = *layout.get(1).context("ui index")?;
     match state.tab {
         ViewTab::Conversation => {
             draw_conversation(frame, main_layout, state).context("draw conversation tab")?;
@@ -77,6 +73,8 @@ fn draw_conversation(frame: &mut Frame, rect: Rect, state: &State) -> Result<()>
         [Constraint::Fill(1), Constraint::Length(10)],
     )
     .split(rect);
+    let convo_layout = *layout.first().context("ui index")?;
+    let prompt_layout = *layout.get(1).context("ui index")?;
 
     // Conversation display
     let convo = if state.config.api.key.is_empty() {
@@ -89,14 +87,11 @@ fn draw_conversation(frame: &mut Frame, rect: Rect, state: &State) -> Result<()>
             .wrap(Wrap { trim: false })
             .bg(Color::Rgb(0, 0, 35))
             .fg(Color::Rgb(0, 255, 0)),
-        *layout.first().context("ui index")?,
+        convo_layout,
     );
 
     // Text input
-    frame.render_widget(
-        state.prompt_textarea.widget(),
-        *layout.get(1).context("ui index")?,
-    );
+    frame.render_widget(state.prompt_textarea.widget(), prompt_layout);
     Ok(())
 }
 
@@ -118,13 +113,15 @@ fn draw_config(frame: &mut Frame, rect: Rect, state: &State) -> Result<()> {
         [Constraint::Length(9), Constraint::Fill(1)],
     )
     .split(rect);
+    let debug_config_layout = *main_layout.first().context("ui index")?;
+    let debug_logs_layout = *main_layout.get(1).context("ui index")?;
 
     frame.render_widget(
         Paragraph::new(format!("{:#?}", state.config.chat))
             .wrap(Wrap { trim: false })
             .bg(Color::Rgb(0, 20, 35))
             .fg(Color::Rgb(125, 150, 0)),
-        *main_layout.first().context("ui index")?,
+        debug_config_layout,
     );
     let debug_logs_block = Block::new()
         .title(format!(
@@ -140,7 +137,7 @@ fn draw_config(frame: &mut Frame, rect: Rect, state: &State) -> Result<()> {
             .bg(Color::Rgb(30, 30, 0))
             .fg(Color::Rgb(125, 150, 0))
             .block(debug_logs_block),
-        *main_layout.get(1).context("ui index")?,
+        debug_logs_layout,
     );
     Ok(())
 }
