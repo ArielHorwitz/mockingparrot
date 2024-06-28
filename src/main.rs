@@ -41,7 +41,7 @@ async fn run() -> Result<()> {
 }
 
 pub async fn run_app(terminal: &mut Terminal<impl Backend>, config: Config) -> Result<()> {
-    let mut state = State::new(config.clone());
+    let mut state = State::from_config(config.clone()).context("new app state")?;
     let mut ui_state = ui::UiState::default();
     loop {
         terminal

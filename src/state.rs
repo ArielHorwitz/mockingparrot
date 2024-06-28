@@ -1,7 +1,6 @@
 use crate::{api::GptMessage, config::Config};
+use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
-
-const DEFAULT_SYSTEM_MESSAGE: &str = "You are a helpful assistant. Do not bother being polite. Your responses should be concise and terse.";
 
 #[derive(Debug)]
 pub struct State {
@@ -10,11 +9,18 @@ pub struct State {
 }
 
 impl State {
-    pub fn new(config: Config) -> Self {
-        Self {
+    pub fn from_config(config: Config) -> Result<Self> {
+        let system_instructions = config
+            .system
+            .instructions
+            .get(0)
+            .context("no system instructions")?
+            .message
+            .clone();
+        Ok(Self {
             config,
-            conversation: Conversation::default(),
-        }
+            conversation: Conversation::new(system_instructions),
+        })
     }
 }
 
@@ -24,18 +30,14 @@ pub struct Conversation {
 }
 
 impl Conversation {
+    pub fn new(system_instructions: String) -> Self {
+        Self {
+            messages: vec![GptMessage::new_system_message(system_instructions)],
+        }
+    }
+
     pub fn add_message(&mut self, message: GptMessage) {
         self.messages.push(message);
-    }
-}
-
-impl Default for Conversation {
-    fn default() -> Self {
-        Self {
-            messages: vec![GptMessage::new_system_message(
-                DEFAULT_SYSTEM_MESSAGE.to_owned(),
-            )],
-        }
     }
 }
 

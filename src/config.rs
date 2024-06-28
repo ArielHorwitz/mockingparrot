@@ -5,6 +5,7 @@ pub struct Config {
     pub api: Api,
     pub chat: ChatConfig,
     pub ui: Ui,
+    pub system: System,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -41,4 +42,15 @@ pub struct ChatConfig {
 #[derive(Debug, Deserialize, Clone)]
 pub struct Ui {
     pub editor_command: Vec<String>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct System {
+    pub instructions: Vec<SystemInstructions>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct SystemInstructions {
+    pub name: String,
+    pub message: String,
 }
