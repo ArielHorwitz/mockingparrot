@@ -57,6 +57,10 @@ async fn handle_keys(key_event: KeyEvent, state: &mut State) -> Result<HandleEve
 
 async fn handle_config_keys(key_event: KeyEvent, state: &mut State) -> Result<HandleEventResult> {
     match (key_event.code, key_event.modifiers) {
+        (KeyCode::Up, KeyModifiers::NONE) => {
+            state.debug_logs_scroll = state.debug_logs_scroll.saturating_sub(1)
+        }
+        (KeyCode::Down, KeyModifiers::NONE) => state.debug_logs_scroll += 1,
         (KeyCode::Char('d'), KeyModifiers::NONE) => state.debug = !state.debug,
         (KeyCode::Char('t'), KeyModifiers::NONE) => state.config.chat.temperature += 0.05,
         (KeyCode::Char('T'), KeyModifiers::SHIFT) => state.config.chat.temperature -= 0.05,

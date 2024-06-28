@@ -3,7 +3,7 @@ use anyhow::{Context, Result};
 use ratatui::{
     prelude::{Constraint, Direction, Layout, Rect, Stylize},
     style::Color,
-    widgets::{Block, List, Paragraph, Wrap},
+    widgets::{Block, Borders, List, Paragraph, Wrap},
     Frame,
 };
 
@@ -111,7 +111,7 @@ fn new_conversation(frame: &mut Frame, rect: Rect, state: &State) -> Result<()> 
 pub fn draw_config(frame: &mut Frame, rect: Rect, state: &State) -> Result<()> {
     let main_layout = Layout::new(
         Direction::Vertical,
-        [Constraint::Fill(1), Constraint::Fill(1)],
+        [Constraint::Length(9), Constraint::Fill(1)],
     )
     .split(rect);
 
@@ -122,11 +122,20 @@ pub fn draw_config(frame: &mut Frame, rect: Rect, state: &State) -> Result<()> {
             .fg(Color::Rgb(125, 150, 0)),
         *main_layout.first().context("ui index")?,
     );
+    let debug_logs_block = Block::new()
+        .title(format!(
+            "Debug logs ({}/{})",
+            state.debug_logs_scroll,
+            state.debug_logs.len()
+        ))
+        .borders(Borders::TOP | Borders::LEFT);
     frame.render_widget(
         Paragraph::new(state.debug_logs.join("\n"))
             .wrap(Wrap { trim: false })
+            .scroll((state.debug_logs_scroll, 0))
             .bg(Color::Rgb(30, 30, 0))
-            .fg(Color::Rgb(125, 150, 0)),
+            .fg(Color::Rgb(125, 150, 0))
+            .block(debug_logs_block),
         *main_layout.get(1).context("ui index")?,
     );
     Ok(())

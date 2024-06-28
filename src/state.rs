@@ -11,6 +11,7 @@ pub struct State {
     pub status_bar_text: String,
     pub prompt_textarea: TextArea<'static>,
     pub debug_logs: Vec<String>,
+    pub debug_logs_scroll: u16,
     pub system_instruction_selection: ListState,
     pub debug: bool,
     pub key_event_debug: String,
@@ -30,17 +31,20 @@ impl State {
         prompt_textarea.set_style(Style::new().bg(Color::Rgb(0, 25, 25)).fg(Color::White));
         prompt_textarea.set_line_number_style(Style::new().bg(Color::Black).fg(Color::Cyan));
         prompt_textarea.set_cursor_style(Style::new().bg(Color::Rgb(200, 200, 200)));
-        Ok(Self {
+        let mut state = Self {
             config,
             conversation: Conversation::new(system_instructions),
             tab: ViewTab::Conversation,
             status_bar_text: format!("Welcome to {}", crate::APP_TITLE),
             prompt_textarea,
-            debug_logs: vec!["Debug logs empty.".to_string()],
+            debug_logs: Vec::new(),
+            debug_logs_scroll: 0,
             system_instruction_selection: ListState::default().with_selected(Some(0)),
             debug: false,
             key_event_debug: Default::default(),
-        })
+        };
+        state.add_debug_log("Start of debug logs");
+        Ok(state)
     }
 
     pub fn set_status_bar_text<T: Into<String>>(&mut self, text: T) {
@@ -48,7 +52,8 @@ impl State {
     }
 
     pub fn add_debug_log<T: Into<String>>(&mut self, log: T) {
-        self.debug_logs.push(log.into());
+        self.debug_logs
+            .push(format!("{} | {}", get_timestamp(), log.into()));
     }
 }
 
@@ -93,4 +98,9 @@ impl std::fmt::Display for Conversation {
         }
         std::fmt::Result::Ok(())
     }
+}
+
+fn get_timestamp() -> String {
+    let now = chrono::Local::now();
+    format!("{}", now.format("%Y-%m-%d %H:%M:%S%.3f"))
 }
