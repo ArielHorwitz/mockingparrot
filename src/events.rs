@@ -18,7 +18,7 @@ pub enum HandleEventResult {
 pub async fn handle_events(
     timeout: u64,
     state: &mut State,
-    ui_state: &mut UiState<'_>,
+    ui_state: &mut UiState,
 ) -> Result<HandleEventResult> {
     if !event::poll(std::time::Duration::from_millis(timeout)).context("poll terminal events")? {
         return Ok(HandleEventResult::None);
@@ -38,7 +38,7 @@ pub async fn handle_events(
 async fn handle_keys(
     key_event: KeyEvent,
     state: &mut State,
-    ui_state: &mut UiState<'_>,
+    ui_state: &mut UiState,
 ) -> Result<HandleEventResult> {
     if key_event.kind != KeyEventKind::Press {
         return Ok(HandleEventResult::None);
@@ -69,7 +69,7 @@ async fn handle_keys(
 async fn handle_config_keys(
     key_event: KeyEvent,
     state: &mut State,
-    ui_state: &mut UiState<'_>,
+    ui_state: &mut UiState,
 ) -> Result<HandleEventResult> {
     match (key_event.code, key_event.modifiers) {
         (KeyCode::Char('d'), KeyModifiers::NONE) => ui_state.debug = !ui_state.debug,
@@ -89,7 +89,7 @@ async fn handle_config_keys(
 fn handle_new_conversation_keys(
     key_event: KeyEvent,
     state: &mut State,
-    ui_state: &mut UiState<'_>,
+    ui_state: &mut UiState,
 ) -> HandleEventResult {
     match (key_event.code, key_event.modifiers) {
         (KeyCode::Esc, KeyModifiers::NONE) => ui_state.tab = ViewTab::Conversation,
@@ -139,7 +139,7 @@ fn handle_new_conversation_keys(
 async fn handle_conversation_keys(
     key_event: KeyEvent,
     state: &mut State,
-    ui_state: &mut UiState<'_>,
+    ui_state: &mut UiState,
 ) -> Result<HandleEventResult> {
     match (key_event.code, key_event.modifiers) {
         (KeyCode::Char('n'), KeyModifiers::CONTROL) => ui_state.tab = ViewTab::NewConversation,
@@ -190,7 +190,7 @@ fn get_message_text_from_editor(config: &crate::config::Config) -> Result<String
     Ok(message_text)
 }
 
-async fn do_prompt(state: &mut State, ui_state: &mut UiState<'_>) -> Result<()> {
+async fn do_prompt(state: &mut State, ui_state: &mut UiState) -> Result<()> {
     let raw_response =
         crate::api::call_api(&reqwest::Client::new(), &state.config, &state.conversation)
             .await

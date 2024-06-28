@@ -10,17 +10,17 @@ use tui_textarea::TextArea;
 
 const STATUSBAR_HELP_TEXT: &str = "Ctrl+q - Quit, F1 - conversation, F2 - config/debug";
 
-pub struct UiState<'a> {
+pub struct UiState {
     pub tab: ViewTab,
     pub status_bar_text: String,
-    pub textarea: TextArea<'a>,
+    pub textarea: TextArea<'static>,
     pub feedback: String,
     pub system_instruction_selection: ListState,
     pub debug: bool,
     pub key_event_debug: String,
 }
 
-impl<'a> Default for UiState<'a> {
+impl Default for UiState {
     fn default() -> Self {
         Self {
             tab: ViewTab::Conversation,
@@ -34,7 +34,7 @@ impl<'a> Default for UiState<'a> {
     }
 }
 
-impl<'a> std::fmt::Debug for UiState<'a> {
+impl std::fmt::Debug for UiState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Debug mode: {:?}\n{}", self.debug, self.key_event_debug)
     }
