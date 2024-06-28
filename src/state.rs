@@ -18,6 +18,10 @@ pub struct State {
 }
 
 impl State {
+    /// Returns a `State` object from a given `Config` object.
+    ///
+    /// # Errors
+    /// Will error if no system instructions are present in the config.
     pub fn from_config(config: Config) -> Result<Self> {
         let system_instructions = config
             .system
@@ -41,7 +45,7 @@ impl State {
             debug_logs_scroll: 0,
             system_instruction_selection: ListState::default().with_selected(Some(0)),
             debug: false,
-            key_event_debug: Default::default(),
+            key_event_debug: String::default(),
         };
         state.add_debug_log("Start of debug logs");
         Ok(state)
@@ -65,6 +69,7 @@ pub enum ViewTab {
 }
 
 impl ViewTab {
+    #[must_use]
     pub fn next_tab(self) -> ViewTab {
         match self {
             ViewTab::Conversation => ViewTab::NewConversation,
@@ -80,6 +85,7 @@ pub struct Conversation {
 }
 
 impl Conversation {
+    #[must_use]
     pub fn new(system_instructions: String) -> Self {
         Self {
             messages: vec![GptMessage::new_system_message(system_instructions)],
@@ -93,7 +99,7 @@ impl Conversation {
 
 impl std::fmt::Display for Conversation {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for message in self.messages.iter() {
+        for message in &self.messages {
             writeln!(f, "{message}")?;
         }
         std::fmt::Result::Ok(())

@@ -9,7 +9,11 @@ use ratatui::{
 
 const STATUSBAR_HELP_TEXT: &str = "Ctrl+q - Quit, F1 - conversation, F2 - config/debug";
 
-pub fn draw_ui_frame(frame: &mut Frame, state: &State) -> Result<()> {
+/// Draw the UI frame.
+///
+/// # Errors
+/// An error with a description is returned in case of failure.
+pub fn draw_frame(frame: &mut Frame, state: &State) -> Result<()> {
     let layout = Layout::new(
         Direction::Vertical,
         [
@@ -54,19 +58,20 @@ pub fn draw_ui_frame(frame: &mut Frame, state: &State) -> Result<()> {
     );
 
     // Main UI
+    let main_layout = *layout.get(1).context("ui index")?;
     match state.tab {
         ViewTab::Conversation => {
-            draw_conversation(frame, *layout.get(1).context("ui index")?, state)?
+            draw_conversation(frame, main_layout, state).context("draw conversation tab")?;
         }
         ViewTab::NewConversation => {
-            new_conversation(frame, *layout.get(1).context("ui index")?, state)?;
+            new_conversation(frame, main_layout, state);
         }
-        ViewTab::Config => draw_config(frame, *layout.get(1).context("ui index")?, state)?,
+        ViewTab::Config => draw_config(frame, main_layout, state).context("draw config tab")?,
     };
     Ok(())
 }
 
-pub fn draw_conversation(frame: &mut Frame, rect: Rect, state: &State) -> Result<()> {
+fn draw_conversation(frame: &mut Frame, rect: Rect, state: &State) -> Result<()> {
     let layout = Layout::new(
         Direction::Vertical,
         [Constraint::Fill(1), Constraint::Length(10)],
@@ -95,7 +100,7 @@ pub fn draw_conversation(frame: &mut Frame, rect: Rect, state: &State) -> Result
     Ok(())
 }
 
-fn new_conversation(frame: &mut Frame, rect: Rect, state: &State) -> Result<()> {
+fn new_conversation(frame: &mut Frame, rect: Rect, state: &State) {
     let list_items = state
         .config
         .system
@@ -105,10 +110,9 @@ fn new_conversation(frame: &mut Frame, rect: Rect, state: &State) -> Result<()> 
     let list = List::new(list_items).highlight_style(Color::LightGreen);
     let mut list_state = state.system_instruction_selection.clone();
     frame.render_stateful_widget(list, rect, &mut list_state);
-    Ok(())
 }
 
-pub fn draw_config(frame: &mut Frame, rect: Rect, state: &State) -> Result<()> {
+fn draw_config(frame: &mut Frame, rect: Rect, state: &State) -> Result<()> {
     let main_layout = Layout::new(
         Direction::Vertical,
         [Constraint::Length(9), Constraint::Fill(1)],

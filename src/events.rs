@@ -14,6 +14,12 @@ pub enum HandleEventResult {
     Quit,
 }
 
+
+/// Handle terminal events
+///
+/// # Errors
+/// An error with a description is returned in case of failure.
+#[allow(clippy::module_name_repetitions)]
 pub async fn handle_events(timeout: u64, state: &mut State) -> Result<HandleEventResult> {
     if !event::poll(std::time::Duration::from_millis(timeout)).context("poll terminal events")? {
         return Ok(HandleEventResult::None);
@@ -41,24 +47,22 @@ async fn handle_keys(key_event: KeyEvent, state: &mut State) -> Result<HandleEve
         (KeyCode::F(1), _) => state.tab = ViewTab::Conversation,
         (KeyCode::F(2), _) => state.tab = ViewTab::Config,
         _ => {
-            return match state.tab {
-                ViewTab::Conversation => handle_conversation_keys(key_event, state)
+            match state.tab {
+                ViewTab::Conversation => return handle_conversation_keys(key_event, state)
                     .await
                     .context("handle conversation keys"),
-                ViewTab::NewConversation => Ok(handle_new_conversation_keys(key_event, state)),
-                ViewTab::Config => handle_config_keys(key_event, state)
-                    .await
-                    .context("handle config keys"),
+                ViewTab::NewConversation => handle_new_conversation_keys(key_event, state),
+                ViewTab::Config => handle_config_keys(key_event, state),
             };
         }
     };
     Ok(HandleEventResult::None)
 }
 
-async fn handle_config_keys(key_event: KeyEvent, state: &mut State) -> Result<HandleEventResult> {
+fn handle_config_keys(key_event: KeyEvent, state: &mut State) -> HandleEventResult {
     match (key_event.code, key_event.modifiers) {
         (KeyCode::Up, KeyModifiers::NONE) => {
-            state.debug_logs_scroll = state.debug_logs_scroll.saturating_sub(1)
+            state.debug_logs_scroll = state.debug_logs_scroll.saturating_sub(1);
         }
         (KeyCode::Down, KeyModifiers::NONE) => state.debug_logs_scroll += 1,
         (KeyCode::Char('d'), KeyModifiers::NONE) => state.debug = !state.debug,
@@ -72,7 +76,7 @@ async fn handle_config_keys(key_event: KeyEvent, state: &mut State) -> Result<Ha
         (KeyCode::Char('R'), KeyModifiers::SHIFT) => state.config.chat.presence_penalty -= 0.05,
         _ => (),
     };
-    Ok(HandleEventResult::None)
+    HandleEventResult::None
 }
 
 fn handle_new_conversation_keys(key_event: KeyEvent, state: &mut State) -> HandleEventResult {
@@ -176,7 +180,7 @@ fn get_message_text_from_editor(config: &crate::config::Config) -> Result<String
 
 async fn do_prompt(state: &mut State) -> Result<()> {
     let raw_response =
-        crate::api::call_api(&reqwest::Client::new(), &state.config, &state.conversation)
+        crate::api::get_completion(&reqwest::Client::new(), &state.config, &state.conversation)
             .await
             .context("decode response");
     if let Ok(response) = raw_response {

@@ -1,6 +1,6 @@
-use crate::config::{ChatConfig, Config};
+use crate::config::{Chat as ChatConfig, Config};
 use crate::state::Conversation;
-use anyhow::Result;
+use anyhow::{Context, Result};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
@@ -36,6 +36,7 @@ pub struct GptMessage {
 }
 
 impl GptMessage {
+    #[must_use]
     pub fn new_user_message(content: String) -> Self {
         GptMessage {
             role: "user".to_owned(),
@@ -43,6 +44,7 @@ impl GptMessage {
         }
     }
 
+    #[must_use]
     pub fn new_system_message(content: String) -> Self {
         GptMessage {
             role: "system".to_owned(),
@@ -95,7 +97,12 @@ pub struct GptResponse {
     pub system_fingerprint: String,
 }
 
-pub async fn call_api(
+#[allow(clippy::doc_markdown)]
+/// Call OpenAI's ChatGPT completions endpoint.
+///
+/// # Errors
+/// Returns an error if the request fails to send or the response parsing fails.
+pub async fn get_completion(
     client: &Client,
     config: &Config,
     conversation: &Conversation,
@@ -106,8 +113,10 @@ pub async fn call_api(
         .bearer_auth(&config.api.key)
         .json(&call_data)
         .send()
-        .await?
+        .await
+        .context("send api request")?
         .json()
-        .await?;
+        .await
+        .context("parse api response as json")?;
     Ok(response)
 }
