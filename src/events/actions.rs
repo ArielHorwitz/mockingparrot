@@ -50,6 +50,7 @@ pub async fn do_prompt(state: &mut State) -> Result<()> {
                 .message;
             state.conversation.add_message(message.clone());
             state.set_status_bar_text(format!("AI responded. {}", response.usage));
+            state.add_debug_log(response.usage.to_string());
         }
         Err(error) => {
             state.set_status_bar_text(API_ERROR_FEEDBACK);
