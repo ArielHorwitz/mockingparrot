@@ -78,16 +78,35 @@ fn draw_conversation(frame: &mut Frame, rect: Rect, state: &State) -> Result<()>
     } else {
         state.conversation.to_string()
     };
+    let convo_title = format!(
+        "Conversation ({}/{})",
+        state.conversation_scroll,
+        state.conversation.messages.len()
+    );
+    let convo_block = Block::new()
+        .borders(Borders::ALL)
+        .style(Color::LightBlue)
+        .title(convo_title)
+        .title_style(Color::LightCyan);
     frame.render_widget(
         Paragraph::new(convo)
             .wrap(Wrap { trim: false })
             .bg(Color::Rgb(0, 0, 35))
-            .fg(Color::Rgb(0, 255, 0)),
+            .fg(Color::LightGreen)
+            .scroll((state.conversation_scroll, 0))
+            .block(convo_block),
         convo_layout,
     );
 
     // Text input
-    frame.render_widget(state.prompt_textarea.widget(), prompt_layout);
+    let convo_block = Block::new()
+        .borders(Borders::ALL)
+        .style(Color::Yellow)
+        .title("Prompt:")
+        .title_style(Color::LightYellow);
+    let prompt_area = convo_block.inner(prompt_layout);
+    frame.render_widget(convo_block, prompt_layout);
+    frame.render_widget(state.prompt_textarea.widget(), prompt_area);
     Ok(())
 }
 

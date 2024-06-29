@@ -56,10 +56,12 @@ async fn handle_keys(key_event: KeyEvent, state: &mut State) -> Result<HandleEve
 
 fn handle_config_keys(key_event: KeyEvent, state: &mut State) -> HandleEventResult {
     match (key_event.code, key_event.modifiers) {
-        (KeyCode::Up, KeyModifiers::NONE) => {
+        (KeyCode::PageUp, KeyModifiers::NONE) => {
             state.debug_logs_scroll = state.debug_logs_scroll.saturating_sub(1);
         }
-        (KeyCode::Down, KeyModifiers::NONE) => state.debug_logs_scroll += 1,
+        (KeyCode::PageDown, KeyModifiers::NONE) => {
+            state.debug_logs_scroll = state.debug_logs_scroll.saturating_add(1);
+        }
         (KeyCode::Char('t'), KeyModifiers::NONE) => state.config.chat.temperature += 0.05,
         (KeyCode::Char('T'), KeyModifiers::SHIFT) => state.config.chat.temperature -= 0.05,
         (KeyCode::Char('p'), KeyModifiers::NONE) => state.config.chat.top_p += 0.05,
@@ -124,6 +126,12 @@ async fn handle_conversation_keys(
     state: &mut State,
 ) -> Result<HandleEventResult> {
     match (key_event.code, key_event.modifiers) {
+        (KeyCode::PageUp, KeyModifiers::NONE) => {
+            state.conversation_scroll = state.conversation_scroll.saturating_sub(1);
+        }
+        (KeyCode::PageDown, KeyModifiers::NONE) => {
+            state.conversation_scroll = state.conversation_scroll.saturating_add(1);
+        }
         (KeyCode::Char('n'), KeyModifiers::CONTROL) => state.tab = ViewTab::NewConversation,
         (KeyCode::Enter, KeyModifiers::ALT) => {
             let message = GptMessage::new_user_message(state.prompt_textarea.lines().join("\n"));
