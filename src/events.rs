@@ -133,7 +133,12 @@ async fn handle_conversation_keys(
         }
         (KeyCode::Char('n'), KeyModifiers::CONTROL) => state.tab = ViewTab::NewConversation,
         (KeyCode::Enter, KeyModifiers::ALT) => {
-            let message = GptMessage::new_user_message(state.prompt_textarea.lines().join("\n"));
+            let text = state.prompt_textarea.lines().join("\n");
+            if text.trim().is_empty() {
+                state.set_status_bar_text("Cannot send empty message.");
+                return Ok(HandleEventResult::None);
+            }
+            let message = GptMessage::new_user_message(text);
             state.conversation.add_message(message);
             do_prompt(state).await?;
         }
