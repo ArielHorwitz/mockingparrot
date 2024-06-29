@@ -107,7 +107,7 @@ pub struct GptError {
     pub message: String,
     pub r#type: String,
     pub param: String,
-    pub code: Option<usize>,
+    pub code: Option<String>,
 }
 
 pub async fn get_completion(
@@ -128,9 +128,14 @@ pub async fn get_completion(
         .context("parse api response as json")?;
     match serde_json::from_str::<GptResponse>(&raw_response) {
         Ok(response) => Ok(response),
-        Err(response_parse_error) => match serde_json::from_str::<GptErrorContainer>(&raw_response) {
-            Ok(error) => Err(anyhow::Error::msg(format!("{}", error.error.message))),
-            Err(_error_parse_error) => Err(anyhow::Error::msg(format!("{response_parse_error}"))),
-        }
+        Err(response_parse_error) => match serde_json::from_str::<GptErrorContainer>(&raw_response)
+        {
+            Ok(error) => Err(anyhow::Error::msg(error.error.message.to_string())),
+            Err(_error_parse_error) => {
+                let error_message =
+                    format!("failed to parse response: {response_parse_error}\n{raw_response}");
+                Err(anyhow::Error::msg(error_message))
+            }
+        },
     }
 }
