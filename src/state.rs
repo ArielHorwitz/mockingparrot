@@ -1,6 +1,6 @@
 use crate::{api::GptMessage, config::Config};
 use anyhow::{Context, Result};
-use ratatui::{prelude::Style, style::Color, widgets::ListState};
+use ratatui::{prelude::Style, style::Color};
 use serde::{Deserialize, Serialize};
 use tui_textarea::TextArea;
 
@@ -13,7 +13,7 @@ pub struct State {
     pub conversation_scroll: u16,
     pub debug_logs: Vec<String>,
     pub debug_logs_scroll: u16,
-    pub system_instruction_selection: ListState,
+    pub system_instruction_selection: usize,
 }
 
 impl State {
@@ -39,7 +39,7 @@ impl State {
             conversation_scroll: 0,
             debug_logs: Vec::new(),
             debug_logs_scroll: 0,
-            system_instruction_selection: ListState::default().with_selected(Some(0)),
+            system_instruction_selection: 0,
         };
         state.add_debug_log("Start of debug logs");
         Ok(state)

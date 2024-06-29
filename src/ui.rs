@@ -3,7 +3,7 @@ use anyhow::{Context, Result};
 use ratatui::{
     prelude::{Constraint, Direction, Layout, Rect, Stylize},
     style::Color,
-    widgets::{Block, Borders, List, Paragraph, Wrap},
+    widgets::{Block, Borders, List, ListState, Paragraph, Wrap},
     Frame,
 };
 
@@ -118,7 +118,8 @@ fn new_conversation(frame: &mut Frame, rect: Rect, state: &State) {
         .iter()
         .map(|i| format!(">> {}\n{}", i.name, i.message));
     let list = List::new(list_items).highlight_style(Color::LightGreen);
-    let mut list_state = state.system_instruction_selection.clone();
+    let mut list_state =
+        ListState::default().with_selected(Some(state.system_instruction_selection));
     frame.render_stateful_widget(list, rect, &mut list_state);
 }
 

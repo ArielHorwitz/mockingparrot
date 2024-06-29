@@ -78,42 +78,30 @@ fn handle_new_conversation_keys(key_event: KeyEvent, state: &mut State) -> Handl
     match (key_event.code, key_event.modifiers) {
         (KeyCode::Esc, KeyModifiers::NONE) => state.tab = ViewTab::Conversation,
         (KeyCode::Enter, KeyModifiers::NONE) => {
-            if let Some(instruction_index) = state.system_instruction_selection.selected() {
-                if let Some(system_instructions) =
-                    state.config.system.instructions.get(instruction_index)
-                {
-                    state.conversation = Conversation::new(system_instructions.message.clone());
-                };
-            }
+            if let Some(system_instructions) = state
+                .config
+                .system
+                .instructions
+                .get(state.system_instruction_selection)
+            {
+                state.conversation = Conversation::new(system_instructions.message.clone());
+            };
             state.tab = ViewTab::Conversation;
         }
         (KeyCode::Down, KeyModifiers::NONE) => {
-            let mut new_selection = state.system_instruction_selection.selected().unwrap_or(0) + 1;
+            let new_selection = state.system_instruction_selection.saturating_add(1);
             if new_selection >= state.config.system.instructions.len() {
-                new_selection = 0;
+                state.system_instruction_selection = 0;
+            } else {
+                state.system_instruction_selection = new_selection;
             }
-            state
-                .system_instruction_selection
-                .select(Some(new_selection));
-            state.add_debug_log(format!(
-                "selected preset {:?}",
-                state.system_instruction_selection.selected()
-            ));
         }
         (KeyCode::Up, KeyModifiers::NONE) => {
             let new_selection = state
                 .system_instruction_selection
-                .selected()
-                .unwrap_or(0)
                 .checked_sub(1)
                 .unwrap_or(state.config.system.instructions.len() - 1);
-            state
-                .system_instruction_selection
-                .select(Some(new_selection));
-            state.add_debug_log(format!(
-                "selected preset {:?}",
-                state.system_instruction_selection.selected()
-            ));
+            state.system_instruction_selection = new_selection;
         }
         _ => (),
     };
