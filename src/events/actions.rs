@@ -58,7 +58,7 @@ pub async fn do_prompt(state: &mut State) -> Result<()> {
                 .add_message(GptMessage::new_system_message(
                     API_ERROR_SYSTEM_MESSAGE.to_owned(),
                 ));
-            state.debug_logs.push(format!("{error:#?}"));
+            state.add_debug_log(format!("{error}"));
         }
     }
     Ok(())

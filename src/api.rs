@@ -97,21 +97,40 @@ pub struct GptResponse {
     pub system_fingerprint: String,
 }
 
+#[derive(Deserialize, Debug)]
+pub struct GptErrorContainer {
+    pub error: GptError,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct GptError {
+    pub message: String,
+    pub r#type: String,
+    pub param: String,
+    pub code: Option<usize>,
+}
+
 pub async fn get_completion(
     client: &Client,
     config: &Config,
     conversation: &Conversation,
 ) -> Result<GptResponse> {
     let call_data = GptRequest::new(&config.chat, conversation.messages.clone());
-    let response: GptResponse = client
+    let raw_response = client
         .post("https://api.openai.com/v1/chat/completions")
         .bearer_auth(&config.api.key)
         .json(&call_data)
         .send()
         .await
         .context("send api request")?
-        .json()
+        .text()
         .await
         .context("parse api response as json")?;
-    Ok(response)
+    match serde_json::from_str::<GptResponse>(&raw_response) {
+        Ok(response) => Ok(response),
+        Err(response_parse_error) => match serde_json::from_str::<GptErrorContainer>(&raw_response) {
+            Ok(error) => Err(anyhow::Error::msg(format!("{}", error.error.message))),
+            Err(_error_parse_error) => Err(anyhow::Error::msg(format!("{response_parse_error}"))),
+        }
+    }
 }
