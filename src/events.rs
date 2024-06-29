@@ -139,7 +139,8 @@ async fn handle_conversation_keys(
             do_prompt(state).await?;
         }
         (KeyCode::Char('e'), KeyModifiers::ALT) => {
-            let message_text = get_message_text_from_editor(&state.config)
+            let initial_text = state.prompt_textarea.lines().join("\n");
+            let message_text = get_message_text_from_editor(&state.config, initial_text.as_str())
                 .context("get message text from editor")?;
             state.prompt_textarea.select_all();
             state.prompt_textarea.cut();
@@ -153,13 +154,17 @@ async fn handle_conversation_keys(
     Ok(HandleEventResult::None)
 }
 
-fn get_message_text_from_editor(config: &crate::config::Config) -> Result<String> {
+fn get_message_text_from_editor(
+    config: &crate::config::Config,
+    initial_text: &str,
+) -> Result<String> {
     let user_home_dir = std::env::var("HOME").context("get HOME environment variable")?;
     let message_file = std::path::Path::new(&user_home_dir).join(MESSAGE_FILE);
     let message_dir = message_file
         .parent()
         .expect("get message file parent directory");
     std::fs::create_dir_all(message_dir).context("create directory for message file")?;
+    std::fs::write(&message_file, initial_text).context("write initial text to message file")?;
     let mut editor_command_iter = config.ui.editor_command.iter();
     let editor_process_output =
         Command::new(editor_command_iter.next().context("editor command empty")?)
@@ -174,7 +179,7 @@ fn get_message_text_from_editor(config: &crate::config::Config) -> Result<String
         ));
     }
     let message_text = std::fs::read_to_string(message_file)
-        .context("read message text from file")?
+        .context("read text from message file")?
         .trim()
         .to_owned();
     Ok(message_text)
