@@ -17,14 +17,14 @@ pub enum HandleEventResult {
 pub async fn handle(
     timeout: u64,
     state: &mut State,
-    keymap: &HotkeysMap,
+    hotkey_map: &HotkeysMap,
 ) -> Result<HandleEventResult> {
     if !event::poll(std::time::Duration::from_millis(timeout)).context("poll terminal events")? {
         return Ok(HandleEventResult::None);
     };
     let terminal_event = event::read().context("read terminal event")?;
     match terminal_event {
-        Event::Key(key_event) => return handle_keys(key_event, state, keymap).await,
+        Event::Key(key_event) => return handle_keys(key_event, state, hotkey_map).await,
         Event::FocusGained => state.add_debug_log("focus gained"),
         Event::FocusLost => state.add_debug_log("focus lost"),
         Event::Mouse(ev) => state.add_debug_log(format!("mouse {ev:#?}")),
@@ -37,12 +37,12 @@ pub async fn handle(
 async fn handle_keys(
     key_event: KeyEvent,
     state: &mut State,
-    keymap: &HotkeysMap,
+    hotkey_map: &HotkeysMap,
 ) -> Result<HandleEventResult> {
     if key_event.kind != KeyEventKind::Press {
         return Ok(HandleEventResult::None);
     }
-    let is_hotkey = keymap.get(&(key_event));
+    let is_hotkey = hotkey_map.get(&(key_event));
     match (is_hotkey, key_event.code, key_event.modifiers) {
         (Some(hotkey_action), _, _) => match hotkey_action {
             HotkeyAction::QuitProgram => return Ok(HandleEventResult::Quit),
@@ -52,26 +52,28 @@ async fn handle_keys(
             _ => {
                 match state.tab {
                     ViewTab::Conversation => {
-                        return handle_conversation_keys(key_event, state, keymap)
+                        return handle_conversation_keys(key_event, state, hotkey_map)
                             .await
                             .context("handle conversation keys")
                     }
                     ViewTab::NewConversation => {
-                        handle_new_conversation_keys(key_event, state, keymap)
+                        handle_new_conversation_keys(key_event, state, hotkey_map)
                     }
-                    ViewTab::Config => handle_config_keys(key_event, state, keymap),
+                    ViewTab::Config => handle_config_keys(key_event, state, hotkey_map),
                 };
             }
         },
         _ => {
             match state.tab {
                 ViewTab::Conversation => {
-                    return handle_conversation_keys(key_event, state, keymap)
+                    return handle_conversation_keys(key_event, state, hotkey_map)
                         .await
                         .context("handle conversation keys")
                 }
-                ViewTab::NewConversation => handle_new_conversation_keys(key_event, state, keymap),
-                ViewTab::Config => handle_config_keys(key_event, state, keymap),
+                ViewTab::NewConversation => {
+                    handle_new_conversation_keys(key_event, state, hotkey_map)
+                }
+                ViewTab::Config => handle_config_keys(key_event, state, hotkey_map),
             };
         }
     };
@@ -81,18 +83,16 @@ async fn handle_keys(
 fn handle_config_keys(
     key_event: KeyEvent,
     state: &mut State,
-    keymap: &HotkeysMap,
+    hotkey_map: &HotkeysMap,
 ) -> HandleEventResult {
-    let is_hotkey = keymap.get(&(key_event));
-    match (is_hotkey, key_event.code, key_event.modifiers) {
-        (Some(hotkey_action), _, _) => match *hotkey_action {
+    if let Some(hotkey_action) = hotkey_map.get(&(key_event)) {
+        match *hotkey_action {
             HotkeyAction::DebugLogsScrollUp => {
                 state.debug_logs_scroll = state.debug_logs_scroll.saturating_sub(1);
             }
             HotkeyAction::DebugLogsScrollDown => {
                 state.debug_logs_scroll = state.debug_logs_scroll.saturating_add(1);
             }
-            // HotkeyAction::ToggleDebug => ui_state.debug = !ui_state.debug,
             HotkeyAction::IncrementTempurature => state.config.chat.temperature += 0.05,
             HotkeyAction::DecrementTempurature => state.config.chat.temperature -= 0.05,
             HotkeyAction::IncrementTopP => state.config.chat.top_p += 0.05,
@@ -102,8 +102,7 @@ fn handle_config_keys(
             HotkeyAction::IncrementPresencePenalty => state.config.chat.presence_penalty += 0.05,
             HotkeyAction::DecrementPresencePenalty => state.config.chat.presence_penalty -= 0.05,
             _ => (),
-        },
-        _ => (),
+        };
     };
     HandleEventResult::None
 }
@@ -153,9 +152,9 @@ fn handle_new_conversation_keys(
 async fn handle_conversation_keys(
     key_event: KeyEvent,
     state: &mut State,
-    keymap: &HotkeysMap,
+    hotkey_map: &HotkeysMap,
 ) -> Result<HandleEventResult> {
-    let is_hotkey = keymap.get(&(key_event));
+    let is_hotkey = hotkey_map.get(&(key_event));
     match (is_hotkey, key_event.code, key_event.modifiers) {
         (Some(hotkey_action), _, _) => match *hotkey_action {
             HotkeyAction::ConversationScrollUp => {
