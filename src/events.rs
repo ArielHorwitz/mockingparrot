@@ -42,9 +42,8 @@ async fn handle_keys(
     if key_event.kind != KeyEventKind::Press {
         return Ok(HandleEventResult::None);
     }
-    let is_hotkey = hotkey_map.get(&(key_event));
-    match (is_hotkey, key_event.code, key_event.modifiers) {
-        (Some(hotkey_action), _, _) => match hotkey_action {
+    if let Some(hotkey_action) = hotkey_map.get(&(key_event)) {
+        match hotkey_action {
             HotkeyAction::QuitProgram => return Ok(HandleEventResult::Quit),
             HotkeyAction::NextTab => state.tab = state.tab.next_tab(),
             HotkeyAction::ViewConversationTab => state.tab = ViewTab::Conversation,
@@ -62,21 +61,18 @@ async fn handle_keys(
                     ViewTab::Config => handle_config_keys(key_event, state, hotkey_map),
                 };
             }
-        },
-        _ => {
-            match state.tab {
-                ViewTab::Conversation => {
-                    return handle_conversation_keys(key_event, state, hotkey_map)
-                        .await
-                        .context("handle conversation keys")
-                }
-                ViewTab::NewConversation => {
-                    handle_new_conversation_keys(key_event, state, hotkey_map)
-                }
-                ViewTab::Config => handle_config_keys(key_event, state, hotkey_map),
-            };
         }
-    };
+    } else {
+        match state.tab {
+            ViewTab::Conversation => {
+                return handle_conversation_keys(key_event, state, hotkey_map)
+                    .await
+                    .context("handle conversation keys")
+            }
+            ViewTab::NewConversation => handle_new_conversation_keys(key_event, state, hotkey_map),
+            ViewTab::Config => handle_config_keys(key_event, state, hotkey_map),
+        };
+    }
     Ok(HandleEventResult::None)
 }
 
@@ -86,7 +82,7 @@ fn handle_config_keys(
     hotkey_map: &HotkeysMap,
 ) -> HandleEventResult {
     if let Some(hotkey_action) = hotkey_map.get(&(key_event)) {
-        match *hotkey_action {
+        match hotkey_action {
             HotkeyAction::DebugLogsScrollUp => {
                 state.debug_logs_scroll = state.debug_logs_scroll.saturating_sub(1);
             }
@@ -154,9 +150,8 @@ async fn handle_conversation_keys(
     state: &mut State,
     hotkey_map: &HotkeysMap,
 ) -> Result<HandleEventResult> {
-    let is_hotkey = hotkey_map.get(&(key_event));
-    match (is_hotkey, key_event.code, key_event.modifiers) {
-        (Some(hotkey_action), _, _) => match *hotkey_action {
+    if let Some(hotkey_action) = hotkey_map.get(&(key_event)) {
+        match hotkey_action {
             HotkeyAction::ConversationScrollUp => {
                 state.conversation_scroll = state.conversation_scroll.saturating_sub(1);
             }
@@ -187,10 +182,9 @@ async fn handle_conversation_keys(
             _ => {
                 state.prompt_textarea.input(key_event);
             }
-        },
-        _ => {
-            state.prompt_textarea.input(key_event);
         }
-    };
+    } else {
+        state.prompt_textarea.input(key_event);
+    }
     Ok(HandleEventResult::None)
 }
