@@ -1,5 +1,5 @@
 use crate::api::GptMessage;
-use crate::hotkeys::{HotkeyAction, HotkeysMap};
+use crate::hotkeys::{HotkeyAction, HotkeyMap};
 use crate::state::{Conversation, State, ViewTab};
 use anyhow::{Context, Result};
 use crossterm::event::{self, Event, KeyEvent, KeyEventKind};
@@ -17,7 +17,7 @@ pub enum HandleEventResult {
 pub async fn handle(
     timeout: u64,
     state: &mut State,
-    hotkey_map: &HotkeysMap,
+    hotkey_map: &HotkeyMap,
 ) -> Result<HandleEventResult> {
     if !event::poll(std::time::Duration::from_millis(timeout)).context("poll terminal events")? {
         return Ok(HandleEventResult::None);
@@ -37,7 +37,7 @@ pub async fn handle(
 async fn handle_keys(
     key_event: KeyEvent,
     state: &mut State,
-    hotkey_map: &HotkeysMap,
+    hotkey_map: &HotkeyMap,
 ) -> Result<HandleEventResult> {
     if key_event.kind != KeyEventKind::Press {
         return Ok(HandleEventResult::None);
@@ -79,7 +79,7 @@ async fn handle_keys(
 fn handle_config_keys(
     key_event: KeyEvent,
     state: &mut State,
-    hotkey_map: &HotkeysMap,
+    hotkey_map: &HotkeyMap,
 ) -> HandleEventResult {
     if let Some(hotkey_action) = hotkey_map.get(&(key_event)) {
         match hotkey_action {
@@ -106,11 +106,10 @@ fn handle_config_keys(
 fn handle_new_conversation_keys(
     key_event: KeyEvent,
     state: &mut State,
-    keymap: &HotkeysMap,
+    hotkey_map: &HotkeyMap,
 ) -> HandleEventResult {
-    let is_hotkey = keymap.get(&(key_event));
-    match (is_hotkey, key_event.code, key_event.modifiers) {
-        (Some(hotkey_action), _, _) => match *hotkey_action {
+    if let Some(hotkey_action) = hotkey_map.get(&(key_event)) {
+        match hotkey_action {
             HotkeyAction::EscNewConversation => state.tab = ViewTab::Conversation,
             HotkeyAction::EnterNewConversation => {
                 if let Some(system_instructions) = state
@@ -139,8 +138,7 @@ fn handle_new_conversation_keys(
                 state.system_instruction_selection = new_selection;
             }
             _ => (),
-        },
-        _ => (),
+        }
     };
     HandleEventResult::None
 }
@@ -148,7 +146,7 @@ fn handle_new_conversation_keys(
 async fn handle_conversation_keys(
     key_event: KeyEvent,
     state: &mut State,
-    hotkey_map: &HotkeysMap,
+    hotkey_map: &HotkeyMap,
 ) -> Result<HandleEventResult> {
     if let Some(hotkey_action) = hotkey_map.get(&(key_event)) {
         match hotkey_action {
