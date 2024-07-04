@@ -1,9 +1,9 @@
-# For details see: https://platform.openai.com/docs/api-reference/chat
-
 [api]
+# Get your API key from: https://platform.openai.com/api-keys
 key = ""
 
 [chat]
+# For details see: https://platform.openai.com/docs/api-reference/chat
 model = "gpt-4o"
 max_tokens = 4096
 temperature = 1.0

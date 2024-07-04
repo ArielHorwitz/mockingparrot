@@ -1,4 +1,9 @@
+use anyhow::{Context, Result};
 use serde::Deserialize;
+use std::path::Path;
+
+pub const CONFIG_FILE_PATH: &str = ".config/hummingparrot/config.toml";
+const CONFIG_TEMPLATE: &str = include_str!("../config.template.toml");
 
 use crate::hotkeys::{get_default_config, HotkeyConfig};
 
@@ -57,4 +62,22 @@ pub struct System {
 pub struct SystemInstructions {
     pub name: String,
     pub message: String,
+}
+
+pub fn get_config_from_file() -> Result<Config> {
+    // Resolve config file path
+    let user_home_dir = std::env::var("HOME").context("get HOME environment variable")?;
+    let config_file = Path::new(&user_home_dir).join(CONFIG_FILE_PATH);
+    // Create config directory if missing
+    let config_dir = config_file.parent().context("get config directory")?;
+    if !config_dir.exists() {
+        std::fs::create_dir_all(config_dir).context("create config directory")?;
+    }
+    // Create config from template if missing
+    if !config_file.exists() {
+        std::fs::write(&config_file, CONFIG_TEMPLATE).context("write config template to file")?;
+    }
+    // Read and parse file
+    let config_file_contents = std::fs::read_to_string(config_file).context("read config file")?;
+    toml::from_str(&config_file_contents).context("parse config file toml")
 }

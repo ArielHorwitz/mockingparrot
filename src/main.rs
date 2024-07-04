@@ -1,9 +1,9 @@
 use anyhow::{Context, Result};
 use crossterm::ExecutableCommand;
 use ratatui::prelude::{Backend, CrosstermBackend, Terminal};
-use std::{io::stdout, path::Path};
+use std::io::stdout;
 
-use hummingparrot::config::Config;
+use hummingparrot::config::{get_config_from_file, Config};
 use hummingparrot::events;
 use hummingparrot::hotkeys;
 use hummingparrot::state::State;
@@ -19,9 +19,7 @@ async fn main() {
 }
 
 async fn run() -> Result<()> {
-    let config_toml =
-        std::fs::read_to_string(Path::new("config.toml")).context("read config file")?;
-    let config = toml::from_str(&config_toml).context("parse config file toml")?;
+    let config = get_config_from_file().context("get config from file")?;
     // Setup terminal
     stdout()
         .execute(crossterm::terminal::EnterAlternateScreen)

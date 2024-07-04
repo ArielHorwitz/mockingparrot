@@ -74,7 +74,7 @@ fn draw_conversation(frame: &mut Frame, rect: Rect, state: &State) -> Result<()>
 
     // Conversation display
     let convo = if state.config.api.key.is_empty() {
-        "MISSING API KEY!\n\nEnter an API key in your `config.toml` file to start chatting...\n\nhttps://platform.openai.com".to_owned()
+        format!("MISSING API KEY!\n\nEnter your API key in your config file to start chatting.\nThe config file is located at: ~/{}", crate::config::CONFIG_FILE_PATH)
     } else {
         state.conversation.to_string()
     };
