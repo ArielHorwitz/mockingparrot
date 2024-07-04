@@ -5,6 +5,7 @@ use std::{io::stdout, path::Path};
 
 use hummingparrot::config::Config;
 use hummingparrot::events;
+use hummingparrot::hotkeys;
 use hummingparrot::state::State;
 use hummingparrot::ui;
 
@@ -42,7 +43,7 @@ async fn run() -> Result<()> {
 
 async fn run_app(terminal: &mut Terminal<impl Backend>, config: Config) -> Result<()> {
     let mut state = State::from_config(config.clone()).context("new app state")?;
-    let keymap = events::HotkeyMap::default();
+    let keymap = hotkeys::config_to_map(config.hotkeys);
     loop {
         terminal
             .draw(|frame| {

@@ -1,11 +1,15 @@
 use serde::Deserialize;
 
+use crate::hotkeys::{get_default_config, HotkeysConfig};
+
 #[derive(Debug, Deserialize, Clone)]
 pub struct Config {
     pub api: Api,
     pub chat: Chat,
     pub ui: Ui,
     pub system: System,
+    #[serde(default = "get_default_config")]
+    pub hotkeys: HotkeysConfig,
 }
 
 #[derive(Debug, Deserialize, Clone)]

@@ -1,145 +1,12 @@
-use std::collections::HashMap;
-
 use crate::api::GptMessage;
+use crate::hotkeys::{HotkeyAction, HotkeysMap};
 use crate::state::{Conversation, State, ViewTab};
 use anyhow::{Context, Result};
-use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
+use crossterm::event::{self, Event, KeyEvent, KeyEventKind};
 
 mod actions;
 
 use actions::{do_prompt, get_message_text_from_editor};
-
-#[derive(Debug)]
-pub enum HotkeyAction {
-    NextTab,
-    IncrementTempurature,
-    DecrementTempurature,
-    IncrementTopP,
-    DecrementTopP,
-    IncrementFrequencyPenalty,
-    DecrementFrequencyPenalty,
-    IncrementPresencePenalty,
-    DecrementPresencePenalty,
-    SendPrompt,
-    GetMessageFromEditor,
-    ViewConfigTab,
-    ViewConversationTab,
-    QuitProgram,
-    DebugLogsScrollUp,
-    DebugLogsScrollDown,
-    ConversationScrollUp,
-    ConversationScrollDown,
-    NewConversation,
-    EscNewConversation,
-    EnterNewConversation,
-    UpNewConversation,
-    DownNewConversation,
-}
-
-#[derive(Debug)]
-pub struct HotkeyMap {
-    pub keymap: HashMap<(KeyCode, KeyModifiers), HotkeyAction>,
-}
-
-impl Default for HotkeyMap {
-    fn default() -> Self {
-        let mut keymap = HashMap::new();
-        keymap.insert(
-            (KeyCode::Char('t'), KeyModifiers::NONE),
-            HotkeyAction::IncrementTempurature,
-        );
-        keymap.insert(
-            (KeyCode::Char('T'), KeyModifiers::SHIFT),
-            HotkeyAction::DecrementTempurature,
-        );
-        keymap.insert(
-            (KeyCode::Char('p'), KeyModifiers::NONE),
-            HotkeyAction::IncrementTopP,
-        );
-        keymap.insert(
-            (KeyCode::Char('P'), KeyModifiers::SHIFT),
-            HotkeyAction::DecrementTopP,
-        );
-        keymap.insert(
-            (KeyCode::Char('f'), KeyModifiers::NONE),
-            HotkeyAction::IncrementFrequencyPenalty,
-        );
-        keymap.insert(
-            (KeyCode::Char('F'), KeyModifiers::SHIFT),
-            HotkeyAction::DecrementFrequencyPenalty,
-        );
-        keymap.insert(
-            (KeyCode::Char('r'), KeyModifiers::NONE),
-            HotkeyAction::IncrementPresencePenalty,
-        );
-        keymap.insert(
-            (KeyCode::Char('R'), KeyModifiers::SHIFT),
-            HotkeyAction::DecrementPresencePenalty,
-        );
-        keymap.insert(
-            (KeyCode::Enter, KeyModifiers::ALT),
-            HotkeyAction::SendPrompt,
-        );
-        keymap.insert(
-            (KeyCode::Char('e'), KeyModifiers::ALT),
-            HotkeyAction::GetMessageFromEditor,
-        );
-        keymap.insert(
-            (KeyCode::Char('q'), KeyModifiers::CONTROL),
-            HotkeyAction::QuitProgram,
-        );
-        keymap.insert(
-            (KeyCode::BackTab, KeyModifiers::SHIFT),
-            HotkeyAction::NextTab,
-        );
-        for keymod in [
-            KeyModifiers::NONE,
-            KeyModifiers::SHIFT,
-            KeyModifiers::CONTROL,
-            KeyModifiers::ALT,
-        ] {
-            keymap.insert((KeyCode::F(1), keymod), HotkeyAction::ViewConversationTab);
-            keymap.insert((KeyCode::F(2), keymod), HotkeyAction::ViewConfigTab);
-        }
-        keymap.insert(
-            (KeyCode::PageUp, KeyModifiers::NONE),
-            HotkeyAction::DebugLogsScrollUp,
-        );
-        keymap.insert(
-            (KeyCode::PageDown, KeyModifiers::NONE),
-            HotkeyAction::DebugLogsScrollDown,
-        );
-        keymap.insert(
-            (KeyCode::PageUp, KeyModifiers::CONTROL),
-            HotkeyAction::ConversationScrollUp,
-        );
-        keymap.insert(
-            (KeyCode::PageDown, KeyModifiers::CONTROL),
-            HotkeyAction::ConversationScrollDown,
-        );
-        keymap.insert(
-            (KeyCode::Char('n'), KeyModifiers::CONTROL),
-            HotkeyAction::NewConversation,
-        );
-        keymap.insert(
-            (KeyCode::Esc, KeyModifiers::NONE),
-            HotkeyAction::EscNewConversation,
-        );
-        keymap.insert(
-            (KeyCode::Enter, KeyModifiers::NONE),
-            HotkeyAction::EnterNewConversation,
-        );
-        keymap.insert(
-            (KeyCode::Up, KeyModifiers::NONE),
-            HotkeyAction::UpNewConversation,
-        );
-        keymap.insert(
-            (KeyCode::Down, KeyModifiers::NONE),
-            HotkeyAction::DownNewConversation,
-        );
-        HotkeyMap { keymap }
-    }
-}
 
 pub enum HandleEventResult {
     None,
@@ -150,7 +17,7 @@ pub enum HandleEventResult {
 pub async fn handle(
     timeout: u64,
     state: &mut State,
-    keymap: &HotkeyMap,
+    keymap: &HotkeysMap,
 ) -> Result<HandleEventResult> {
     if !event::poll(std::time::Duration::from_millis(timeout)).context("poll terminal events")? {
         return Ok(HandleEventResult::None);
@@ -170,12 +37,12 @@ pub async fn handle(
 async fn handle_keys(
     key_event: KeyEvent,
     state: &mut State,
-    keymap: &HotkeyMap,
+    keymap: &HotkeysMap,
 ) -> Result<HandleEventResult> {
     if key_event.kind != KeyEventKind::Press {
         return Ok(HandleEventResult::None);
     }
-    let is_hotkey = keymap.keymap.get(&(key_event.code, key_event.modifiers));
+    let is_hotkey = keymap.get(&(key_event));
     match (is_hotkey, key_event.code, key_event.modifiers) {
         (Some(hotkey_action), _, _) => match hotkey_action {
             HotkeyAction::QuitProgram => return Ok(HandleEventResult::Quit),
@@ -214,9 +81,9 @@ async fn handle_keys(
 fn handle_config_keys(
     key_event: KeyEvent,
     state: &mut State,
-    keymap: &HotkeyMap,
+    keymap: &HotkeysMap,
 ) -> HandleEventResult {
-    let is_hotkey = keymap.keymap.get(&(key_event.code, key_event.modifiers));
+    let is_hotkey = keymap.get(&(key_event));
     match (is_hotkey, key_event.code, key_event.modifiers) {
         (Some(hotkey_action), _, _) => match *hotkey_action {
             HotkeyAction::DebugLogsScrollUp => {
@@ -244,9 +111,9 @@ fn handle_config_keys(
 fn handle_new_conversation_keys(
     key_event: KeyEvent,
     state: &mut State,
-    keymap: &HotkeyMap,
+    keymap: &HotkeysMap,
 ) -> HandleEventResult {
-    let is_hotkey = keymap.keymap.get(&(key_event.code, key_event.modifiers));
+    let is_hotkey = keymap.get(&(key_event));
     match (is_hotkey, key_event.code, key_event.modifiers) {
         (Some(hotkey_action), _, _) => match *hotkey_action {
             HotkeyAction::EscNewConversation => state.tab = ViewTab::Conversation,
@@ -286,9 +153,9 @@ fn handle_new_conversation_keys(
 async fn handle_conversation_keys(
     key_event: KeyEvent,
     state: &mut State,
-    keymap: &HotkeyMap,
+    keymap: &HotkeysMap,
 ) -> Result<HandleEventResult> {
-    let is_hotkey = keymap.keymap.get(&(key_event.code, key_event.modifiers));
+    let is_hotkey = keymap.get(&(key_event));
     match (is_hotkey, key_event.code, key_event.modifiers) {
         (Some(hotkey_action), _, _) => match *hotkey_action {
             HotkeyAction::ConversationScrollUp => {
