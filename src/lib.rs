@@ -1,6 +1,7 @@
 pub mod api;
 pub mod config;
 pub mod events;
+pub mod hotkeys;
 pub mod state;
 pub mod ui;
 
