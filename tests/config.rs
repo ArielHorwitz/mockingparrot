@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod config_tests {
-    use hummingparrot::config::Config;
+    use mockingparrot::config::Config;
     use std::path::Path;
 
     #[test]

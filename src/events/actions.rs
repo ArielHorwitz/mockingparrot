@@ -5,7 +5,7 @@ use std::process::Command;
 
 const API_ERROR_FEEDBACK: &str = "An error occured, see debug logs.";
 const API_ERROR_SYSTEM_MESSAGE: &str = "Failed to get a response from the assistant.";
-const MESSAGE_FILE: &str = ".local/share/hummingparrot/message_text";
+const MESSAGE_FILE: &str = ".local/share/mockingparrot/message_text";
 
 pub fn get_message_text_from_editor(
     config: &crate::config::Config,

@@ -3,11 +3,11 @@ use crossterm::ExecutableCommand;
 use ratatui::prelude::{Backend, CrosstermBackend, Terminal};
 use std::io::stdout;
 
-use hummingparrot::config::{get_config_from_file, Config};
-use hummingparrot::events;
-use hummingparrot::hotkeys;
-use hummingparrot::state::State;
-use hummingparrot::ui;
+use mockingparrot::config::{get_config_from_file, Config};
+use mockingparrot::events;
+use mockingparrot::hotkeys;
+use mockingparrot::state::State;
+use mockingparrot::ui;
 
 const FRAME_DURATION_MS: u64 = 50;
 

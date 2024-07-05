@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use serde::Deserialize;
 use std::path::Path;
 
-pub const CONFIG_FILE_PATH: &str = ".config/hummingparrot/config.toml";
+pub const CONFIG_FILE_PATH: &str = ".config/mockingparrot/config.toml";
 const CONFIG_TEMPLATE: &str = include_str!("../config.template.toml");
 
 use crate::hotkeys::{get_default_config, HotkeyConfig};
