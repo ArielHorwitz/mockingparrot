@@ -83,10 +83,10 @@ fn handle_config_keys(
 ) -> HandleEventResult {
     if let Some(hotkey_action) = hotkey_map.get(&(key_event)) {
         match hotkey_action {
-            HotkeyAction::DebugLogsScrollUp => {
+            HotkeyAction::ScrollUp => {
                 state.debug_logs_scroll = state.debug_logs_scroll.saturating_sub(1);
             }
-            HotkeyAction::DebugLogsScrollDown => {
+            HotkeyAction::ScrollDown => {
                 state.debug_logs_scroll = state.debug_logs_scroll.saturating_add(1);
             }
             HotkeyAction::IncrementTempurature => state.config.chat.temperature += 0.05,
@@ -110,8 +110,8 @@ fn handle_new_conversation_keys(
 ) -> HandleEventResult {
     if let Some(hotkey_action) = hotkey_map.get(&(key_event)) {
         match hotkey_action {
-            HotkeyAction::EscNewConversation => state.tab = ViewTab::Conversation,
-            HotkeyAction::EnterNewConversation => {
+            HotkeyAction::Cancel => state.tab = ViewTab::Conversation,
+            HotkeyAction::Select => {
                 if let Some(system_instructions) = state
                     .config
                     .system
@@ -122,7 +122,7 @@ fn handle_new_conversation_keys(
                 };
                 state.tab = ViewTab::Conversation;
             }
-            HotkeyAction::DownNewConversation => {
+            HotkeyAction::SelectionDown => {
                 let new_selection = state.system_instruction_selection.saturating_add(1);
                 if new_selection >= state.config.system.instructions.len() {
                     state.system_instruction_selection = 0;
@@ -130,7 +130,7 @@ fn handle_new_conversation_keys(
                     state.system_instruction_selection = new_selection;
                 }
             }
-            HotkeyAction::UpNewConversation => {
+            HotkeyAction::SelectionUp => {
                 let new_selection = state
                     .system_instruction_selection
                     .checked_sub(1)
@@ -150,10 +150,10 @@ async fn handle_conversation_keys(
 ) -> Result<HandleEventResult> {
     if let Some(hotkey_action) = hotkey_map.get(&(key_event)) {
         match hotkey_action {
-            HotkeyAction::ConversationScrollUp => {
+            HotkeyAction::ScrollUp => {
                 state.conversation_scroll = state.conversation_scroll.saturating_sub(1);
             }
-            HotkeyAction::ConversationScrollDown => {
+            HotkeyAction::ScrollDown => {
                 state.conversation_scroll = state.conversation_scroll.saturating_add(1);
             }
             HotkeyAction::NewConversation => state.tab = ViewTab::NewConversation,

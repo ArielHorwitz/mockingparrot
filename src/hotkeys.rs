@@ -10,7 +10,19 @@ pub type HotkeyMap = HashMap<KeyEvent, HotkeyAction>;
 #[derive(Debug, Deserialize, Hash, Clone, Copy, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum HotkeyAction {
+    QuitProgram,
+    Select,
+    Cancel,
+    SelectionUp,
+    SelectionDown,
+    ScrollUp,
+    ScrollDown,
     NextTab,
+    ViewConversationTab,
+    NewConversation,
+    ViewConfigTab,
+    SendPrompt,
+    GetMessageFromEditor,
     IncrementTempurature,
     DecrementTempurature,
     IncrementTopP,
@@ -19,20 +31,6 @@ pub enum HotkeyAction {
     DecrementFrequencyPenalty,
     IncrementPresencePenalty,
     DecrementPresencePenalty,
-    SendPrompt,
-    GetMessageFromEditor,
-    ViewConfigTab,
-    ViewConversationTab,
-    QuitProgram,
-    DebugLogsScrollUp,
-    DebugLogsScrollDown,
-    ConversationScrollUp,
-    ConversationScrollDown,
-    NewConversation,
-    EscNewConversation,
-    EnterNewConversation,
-    UpNewConversation,
-    DownNewConversation,
 }
 
 #[derive(Debug, Serialize, Deserialize, Hash, Clone, Copy, PartialEq, Eq)]
@@ -76,145 +74,81 @@ pub fn config_to_map(config_map: HotkeyConfig) -> HotkeyMap {
     map
 }
 
-const DEFAULT_HOTKEY_CONFIG: [(HotkeyAction, (KeyCode, KeyModifiers)); 29] = [
-    // NextTab (default: Shift+BackTab)
+const DEFAULT_HOTKEY_CONFIG: [(HotkeyAction, (KeyCode, KeyModifiers)); 21] = [
+    (
+        HotkeyAction::QuitProgram,
+        (KeyCode::Char('q'), KeyModifiers::CONTROL),
+    ),
+    (HotkeyAction::Select, (KeyCode::Enter, KeyModifiers::NONE)),
+    (HotkeyAction::Cancel, (KeyCode::Esc, KeyModifiers::NONE)),
+    (HotkeyAction::SelectionUp, (KeyCode::Up, KeyModifiers::NONE)),
+    (
+        HotkeyAction::SelectionDown,
+        (KeyCode::Down, KeyModifiers::NONE),
+    ),
+    (
+        HotkeyAction::ScrollUp,
+        (KeyCode::PageUp, KeyModifiers::NONE),
+    ),
+    (
+        HotkeyAction::ScrollDown,
+        (KeyCode::PageDown, KeyModifiers::NONE),
+    ),
     (
         HotkeyAction::NextTab,
         (KeyCode::BackTab, KeyModifiers::SHIFT),
-    ),
-    // IncrementTempurature (default: t)
-    (
-        HotkeyAction::IncrementTempurature,
-        (KeyCode::Char('t'), KeyModifiers::empty()),
-    ),
-    // DecrementTempurature (default: Shift+T)
-    (
-        HotkeyAction::DecrementTempurature,
-        (KeyCode::Char('T'), KeyModifiers::SHIFT),
-    ),
-    // IncrementTopP (default: p)
-    (
-        HotkeyAction::IncrementTopP,
-        (KeyCode::Char('p'), KeyModifiers::empty()),
-    ),
-    // DecrementTopP (default: Shift+P)
-    (
-        HotkeyAction::DecrementTopP,
-        (KeyCode::Char('P'), KeyModifiers::SHIFT),
-    ),
-    // IncrementFrequencyPenalty (default: f)
-    (
-        HotkeyAction::IncrementFrequencyPenalty,
-        (KeyCode::Char('f'), KeyModifiers::empty()),
-    ),
-    // DecrementFrequencyPenalty (default: Shift+F)
-    (
-        HotkeyAction::DecrementFrequencyPenalty,
-        (KeyCode::Char('F'), KeyModifiers::SHIFT),
-    ),
-    // IncrementPresencePenalty (default: r)
-    (
-        HotkeyAction::IncrementPresencePenalty,
-        (KeyCode::Char('r'), KeyModifiers::empty()),
-    ),
-    // DecrementPresencePenalty (default: Shift+R)
-    (
-        HotkeyAction::DecrementPresencePenalty,
-        (KeyCode::Char('R'), KeyModifiers::SHIFT),
-    ),
-    // SendPrompt (default: Alt+Enter)
-    (
-        HotkeyAction::SendPrompt,
-        (KeyCode::Enter, KeyModifiers::ALT),
-    ),
-    // GetMessageFromEditor (default: Alt+e)
-    (
-        HotkeyAction::GetMessageFromEditor,
-        (KeyCode::Char('e'), KeyModifiers::ALT),
-    ),
-    // ViewConfigTab (default: <Any>+F2)
-    (
-        HotkeyAction::ViewConfigTab,
-        (KeyCode::F(2), KeyModifiers::CONTROL),
-    ),
-    (
-        HotkeyAction::ViewConfigTab,
-        (KeyCode::F(2), KeyModifiers::SHIFT),
-    ),
-    (
-        HotkeyAction::ViewConfigTab,
-        (KeyCode::F(2), KeyModifiers::ALT),
-    ),
-    (
-        HotkeyAction::ViewConfigTab,
-        (KeyCode::F(2), KeyModifiers::NONE),
-    ),
-    // ViewConversationTab (default: <Any>+F1)
-    (
-        HotkeyAction::ViewConversationTab,
-        (KeyCode::F(1), KeyModifiers::CONTROL),
-    ),
-    (
-        HotkeyAction::ViewConversationTab,
-        (KeyCode::F(1), KeyModifiers::SHIFT),
-    ),
-    (
-        HotkeyAction::ViewConversationTab,
-        (KeyCode::F(1), KeyModifiers::ALT),
     ),
     (
         HotkeyAction::ViewConversationTab,
         (KeyCode::F(1), KeyModifiers::NONE),
     ),
-    // QuitProgram (default: Ctrl+q)
-    (
-        HotkeyAction::QuitProgram,
-        (KeyCode::Char('q'), KeyModifiers::CONTROL),
-    ),
-    // DebugLogsScrollUp (default: PageUp)
-    (
-        HotkeyAction::DebugLogsScrollUp,
-        (KeyCode::PageUp, KeyModifiers::NONE),
-    ),
-    // DebugLogsScrollDown (default: PageDown)
-    (
-        HotkeyAction::DebugLogsScrollDown,
-        (KeyCode::PageDown, KeyModifiers::NONE),
-    ),
-    // ConversationScrollUp (default: Ctrl+PageUp)
-    (
-        HotkeyAction::ConversationScrollUp,
-        (KeyCode::PageUp, KeyModifiers::CONTROL),
-    ),
-    // ConversationScrollDown (default: Ctrl+PageDown)
-    (
-        HotkeyAction::ConversationScrollDown,
-        (KeyCode::PageDown, KeyModifiers::CONTROL),
-    ),
-    // NewConversation (default: Ctrl+n)
     (
         HotkeyAction::NewConversation,
         (KeyCode::Char('n'), KeyModifiers::CONTROL),
     ),
-    // EscNewConversation (default: Esc)
     (
-        HotkeyAction::EscNewConversation,
-        (KeyCode::Esc, KeyModifiers::NONE),
+        HotkeyAction::ViewConfigTab,
+        (KeyCode::F(2), KeyModifiers::NONE),
     ),
-    // EnterNewConversation (default: Enter)
     (
-        HotkeyAction::EnterNewConversation,
-        (KeyCode::Enter, KeyModifiers::NONE),
+        HotkeyAction::SendPrompt,
+        (KeyCode::Enter, KeyModifiers::ALT),
     ),
-    // UpNewConversation (default: Up)
     (
-        HotkeyAction::UpNewConversation,
-        (KeyCode::Up, KeyModifiers::NONE),
+        HotkeyAction::GetMessageFromEditor,
+        (KeyCode::Char('e'), KeyModifiers::ALT),
     ),
-    // DownNewConversation (default: Down)
     (
-        HotkeyAction::DownNewConversation,
-        (KeyCode::Down, KeyModifiers::NONE),
+        HotkeyAction::IncrementTempurature,
+        (KeyCode::Char('t'), KeyModifiers::empty()),
+    ),
+    (
+        HotkeyAction::DecrementTempurature,
+        (KeyCode::Char('T'), KeyModifiers::SHIFT),
+    ),
+    (
+        HotkeyAction::IncrementTopP,
+        (KeyCode::Char('p'), KeyModifiers::empty()),
+    ),
+    (
+        HotkeyAction::DecrementTopP,
+        (KeyCode::Char('P'), KeyModifiers::SHIFT),
+    ),
+    (
+        HotkeyAction::IncrementFrequencyPenalty,
+        (KeyCode::Char('f'), KeyModifiers::empty()),
+    ),
+    (
+        HotkeyAction::DecrementFrequencyPenalty,
+        (KeyCode::Char('F'), KeyModifiers::SHIFT),
+    ),
+    (
+        HotkeyAction::IncrementPresencePenalty,
+        (KeyCode::Char('r'), KeyModifiers::empty()),
+    ),
+    (
+        HotkeyAction::DecrementPresencePenalty,
+        (KeyCode::Char('R'), KeyModifiers::SHIFT),
     ),
 ];
 
