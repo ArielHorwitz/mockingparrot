@@ -29,9 +29,17 @@ impl GptRequest {
     }
 }
 
+#[derive(Debug, Deserialize, Serialize, Clone, Copy)]
+#[serde(rename_all = "snake_case")]
+pub enum Role {
+    User,
+    System,
+    Assistant,
+}
+
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct GptMessage {
-    pub role: String,
+    pub role: Role,
     pub content: String,
 }
 
@@ -39,7 +47,7 @@ impl GptMessage {
     #[must_use]
     pub fn new_user_message(content: String) -> Self {
         GptMessage {
-            role: "user".to_owned(),
+            role: Role::User,
             content,
         }
     }
@@ -47,7 +55,7 @@ impl GptMessage {
     #[must_use]
     pub fn new_system_message(content: String) -> Self {
         GptMessage {
-            role: "system".to_owned(),
+            role: Role::System,
             content,
         }
     }
@@ -55,7 +63,7 @@ impl GptMessage {
 
 impl std::fmt::Display for GptMessage {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}: {}", self.role, self.content)
+        write!(f, "{:?}: {}", self.role, self.content)
     }
 }
 
