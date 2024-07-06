@@ -1,5 +1,5 @@
 use crate::api::GptMessage;
-use crate::hotkeys::{HotkeyAction, HotkeyMap};
+use crate::hotkeys::HotkeyAction;
 use crate::state::{Conversation, State, ViewTab};
 use anyhow::{Context, Result};
 use crossterm::event::{self, Event, KeyEvent, KeyEventKind};
@@ -14,17 +14,13 @@ pub enum HandleEventResult {
     Quit,
 }
 
-pub async fn handle(
-    timeout: u64,
-    state: &mut State,
-    hotkey_map: &HotkeyMap,
-) -> Result<HandleEventResult> {
+pub async fn handle(timeout: u64, state: &mut State) -> Result<HandleEventResult> {
     if !event::poll(std::time::Duration::from_millis(timeout)).context("poll terminal events")? {
         return Ok(HandleEventResult::None);
     };
     let terminal_event = event::read().context("read terminal event")?;
     match terminal_event {
-        Event::Key(key_event) => return handle_keys(key_event, state, hotkey_map).await,
+        Event::Key(key_event) => return handle_keys(key_event, state).await,
         Event::FocusGained => state.add_debug_log("focus gained"),
         Event::FocusLost => state.add_debug_log("focus lost"),
         Event::Mouse(ev) => state.add_debug_log(format!("mouse {ev:#?}")),
@@ -34,15 +30,11 @@ pub async fn handle(
     Ok(HandleEventResult::None)
 }
 
-async fn handle_keys(
-    key_event: KeyEvent,
-    state: &mut State,
-    hotkey_map: &HotkeyMap,
-) -> Result<HandleEventResult> {
+async fn handle_keys(key_event: KeyEvent, state: &mut State) -> Result<HandleEventResult> {
     if key_event.kind != KeyEventKind::Press {
         return Ok(HandleEventResult::None);
     }
-    if let Some(hotkey_action) = hotkey_map.get(&(key_event)) {
+    if let Some(hotkey_action) = state.hotkey_map.get(&(key_event)) {
         match hotkey_action {
             HotkeyAction::QuitProgram => return Ok(HandleEventResult::Quit),
             HotkeyAction::NextTab => state.tab = state.tab.next_tab(),
@@ -51,37 +43,31 @@ async fn handle_keys(
             _ => {
                 match state.tab {
                     ViewTab::Conversation => {
-                        return handle_conversation_keys(key_event, state, hotkey_map)
+                        return handle_conversation_keys(key_event, state)
                             .await
                             .context("handle conversation keys")
                     }
-                    ViewTab::NewConversation => {
-                        handle_new_conversation_keys(key_event, state, hotkey_map)
-                    }
-                    ViewTab::Config => handle_config_keys(key_event, state, hotkey_map),
+                    ViewTab::NewConversation => handle_new_conversation_keys(key_event, state),
+                    ViewTab::Config => handle_config_keys(key_event, state),
                 };
             }
         }
     } else {
         match state.tab {
             ViewTab::Conversation => {
-                return handle_conversation_keys(key_event, state, hotkey_map)
+                return handle_conversation_keys(key_event, state)
                     .await
                     .context("handle conversation keys")
             }
-            ViewTab::NewConversation => handle_new_conversation_keys(key_event, state, hotkey_map),
-            ViewTab::Config => handle_config_keys(key_event, state, hotkey_map),
+            ViewTab::NewConversation => handle_new_conversation_keys(key_event, state),
+            ViewTab::Config => handle_config_keys(key_event, state),
         };
     }
     Ok(HandleEventResult::None)
 }
 
-fn handle_config_keys(
-    key_event: KeyEvent,
-    state: &mut State,
-    hotkey_map: &HotkeyMap,
-) -> HandleEventResult {
-    if let Some(hotkey_action) = hotkey_map.get(&(key_event)) {
+fn handle_config_keys(key_event: KeyEvent, state: &mut State) -> HandleEventResult {
+    if let Some(hotkey_action) = state.hotkey_map.get(&(key_event)) {
         match hotkey_action {
             HotkeyAction::ScrollUp => {
                 state.debug_logs_scroll = state.debug_logs_scroll.saturating_sub(1);
@@ -103,12 +89,8 @@ fn handle_config_keys(
     HandleEventResult::None
 }
 
-fn handle_new_conversation_keys(
-    key_event: KeyEvent,
-    state: &mut State,
-    hotkey_map: &HotkeyMap,
-) -> HandleEventResult {
-    if let Some(hotkey_action) = hotkey_map.get(&(key_event)) {
+fn handle_new_conversation_keys(key_event: KeyEvent, state: &mut State) -> HandleEventResult {
+    if let Some(hotkey_action) = state.hotkey_map.get(&(key_event)) {
         match hotkey_action {
             HotkeyAction::Cancel => state.tab = ViewTab::Conversation,
             HotkeyAction::Select => {
@@ -146,9 +128,8 @@ fn handle_new_conversation_keys(
 async fn handle_conversation_keys(
     key_event: KeyEvent,
     state: &mut State,
-    hotkey_map: &HotkeyMap,
 ) -> Result<HandleEventResult> {
-    if let Some(hotkey_action) = hotkey_map.get(&(key_event)) {
+    if let Some(hotkey_action) = state.hotkey_map.get(&(key_event)) {
         match hotkey_action {
             HotkeyAction::ScrollUp => {
                 state.conversation_scroll = state.conversation_scroll.saturating_sub(1);

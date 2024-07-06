@@ -6,6 +6,7 @@ use tui_textarea::TextArea;
 
 pub struct State {
     pub config: Config,
+    pub hotkey_map: crate::hotkeys::HotkeyMap,
     pub conversation: Conversation,
     pub tab: ViewTab,
     pub status_bar_text: String,
@@ -31,8 +32,10 @@ impl State {
         prompt_textarea.set_line_number_style(Style::new().bg(Color::Black).fg(Color::Cyan));
         prompt_textarea.set_cursor_style(Style::new().bg(Color::Rgb(200, 200, 200)));
         prompt_textarea.set_cursor_line_style(Style::new());
+        let hotkey_map = crate::hotkeys::config_to_map(config.hotkeys.clone());
         let mut state = Self {
             config,
+            hotkey_map,
             conversation: Conversation::new(system_instructions),
             tab: ViewTab::Conversation,
             status_bar_text: format!("Welcome to {}", crate::APP_TITLE),

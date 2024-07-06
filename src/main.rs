@@ -5,7 +5,6 @@ use std::io::stdout;
 
 use mockingparrot::config::{get_config_from_file, Config};
 use mockingparrot::events;
-use mockingparrot::hotkeys;
 use mockingparrot::state::State;
 use mockingparrot::ui;
 
@@ -41,7 +40,6 @@ async fn run() -> Result<()> {
 
 async fn run_app(terminal: &mut Terminal<impl Backend>, config: Config) -> Result<()> {
     let mut state = State::from_config(config.clone()).context("new app state")?;
-    let keymap = hotkeys::config_to_map(config.hotkeys);
     loop {
         terminal
             .draw(|frame| {
@@ -50,7 +48,7 @@ async fn run_app(terminal: &mut Terminal<impl Backend>, config: Config) -> Resul
                 }
             })
             .context("draw frame")?;
-        match events::handle(FRAME_DURATION_MS, &mut state, &keymap)
+        match events::handle(FRAME_DURATION_MS, &mut state)
             .await
             .context("handle events")?
         {
