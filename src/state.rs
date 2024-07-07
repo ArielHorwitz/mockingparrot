@@ -4,6 +4,10 @@ use ratatui::{prelude::Style, style::Color};
 use serde::{Deserialize, Serialize};
 use tui_textarea::TextArea;
 
+pub mod focus;
+
+pub use focus::Focus;
+
 pub struct State {
     pub config: Config,
     pub hotkey_map: crate::hotkeys::HotkeyMap,
@@ -28,7 +32,7 @@ impl State {
         prompt_textarea.set_cursor_line_style(Style::new());
         let hotkey_map = crate::hotkeys::config_to_map(config.hotkeys.clone());
         let ui = Ui {
-            tab: ViewTab::Conversation,
+            focus: Focus::default(),
             status_bar_text: format!("Welcome to {}", crate::APP_TITLE),
             prompt_textarea,
             conversation_scroll: 0,
@@ -58,31 +62,13 @@ impl State {
 }
 
 pub struct Ui {
-    pub tab: ViewTab,
+    pub focus: Focus,
     pub status_bar_text: String,
     pub prompt_textarea: TextArea<'static>,
     pub conversation_scroll: u16,
     pub debug_logs: Vec<String>,
     pub debug_logs_scroll: u16,
     pub system_instruction_selection: usize,
-}
-
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub enum ViewTab {
-    Conversation,
-    NewConversation,
-    Config,
-}
-
-impl ViewTab {
-    #[must_use]
-    pub fn next_tab(self) -> ViewTab {
-        match self {
-            ViewTab::Conversation => ViewTab::NewConversation,
-            ViewTab::NewConversation => ViewTab::Config,
-            ViewTab::Config => ViewTab::Conversation,
-        }
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

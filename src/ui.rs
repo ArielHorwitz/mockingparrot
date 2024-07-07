@@ -1,7 +1,8 @@
-use crate::state::{State, ViewTab};
+use crate::state::focus::{Conversation as ConversationFocus, Scope};
+use crate::state::State;
 use anyhow::{Context, Result};
 use ratatui::{
-    prelude::{Constraint, Direction, Layout, Rect, Stylize},
+    prelude::{Constraint, Direction, Layout, Rect, Style, Stylize},
     style::Color,
     widgets::{Block, Borders, List, ListState, Paragraph, Wrap},
     Frame,
@@ -27,11 +28,7 @@ pub fn draw_frame(frame: &mut Frame, state: &State) -> Result<()> {
 
     // Title bar
     frame.render_widget(
-        Block::new()
-            .title(crate::APP_TITLE_FULL)
-            .bg(Color::Blue)
-            .fg(Color::LightGreen)
-            .bold(),
+        Block::new().title(crate::APP_TITLE_FULL).fg(Color::Green),
         title_layout,
     );
 
@@ -51,19 +48,27 @@ pub fn draw_frame(frame: &mut Frame, state: &State) -> Result<()> {
     );
 
     // Main UI
-    match state.ui.tab {
-        ViewTab::Conversation => {
-            draw_conversation(frame, main_layout, state).context("draw conversation tab")?;
+    match state.ui.focus.get_scope() {
+        Scope::Conversation(conversation_scope) => {
+            draw_conversation(frame, main_layout, state, conversation_scope)
+                .context("draw conversation tab")?;
         }
-        ViewTab::NewConversation => {
+        Scope::NewConversation => {
             new_conversation(frame, main_layout, state);
         }
-        ViewTab::Config => draw_config(frame, main_layout, state).context("draw config tab")?,
+        Scope::Config | Scope::Debug => {
+            draw_config(frame, main_layout, state).context("draw config tab")?;
+        }
     };
     Ok(())
 }
 
-fn draw_conversation(frame: &mut Frame, rect: Rect, state: &State) -> Result<()> {
+fn draw_conversation(
+    frame: &mut Frame,
+    rect: Rect,
+    state: &State,
+    conversation_scope: ConversationFocus,
+) -> Result<()> {
     let layout = Layout::new(
         Direction::Vertical,
         [Constraint::Fill(1), Constraint::Length(10)],
@@ -71,6 +76,18 @@ fn draw_conversation(frame: &mut Frame, rect: Rect, state: &State) -> Result<()>
     .split(rect);
     let convo_layout = *layout.first().context("ui index")?;
     let prompt_layout = *layout.get(1).context("ui index")?;
+
+    // Styles for focus
+    let (convo_block_style, prompt_block_style) = match conversation_scope {
+        ConversationFocus::History => (
+            Style::new().fg(Color::LightCyan),
+            Style::new().fg(Color::Yellow),
+        ),
+        ConversationFocus::Prompt => (
+            Style::new().fg(Color::Blue),
+            Style::new().fg(Color::LightYellow),
+        ),
+    };
 
     // Conversation display
     let convo = if state.config.api.key.is_empty() {
@@ -83,11 +100,13 @@ fn draw_conversation(frame: &mut Frame, rect: Rect, state: &State) -> Result<()>
         state.ui.conversation_scroll,
         state.conversation.messages.len()
     );
+
     let convo_block = Block::new()
         .borders(Borders::ALL)
-        .style(Color::LightBlue)
+        .style(convo_block_style)
         .title(convo_title)
-        .title_style(Color::LightCyan);
+        .title_style(convo_block_style);
+
     frame.render_widget(
         Paragraph::new(convo)
             .wrap(Wrap { trim: false })
@@ -98,14 +117,14 @@ fn draw_conversation(frame: &mut Frame, rect: Rect, state: &State) -> Result<()>
         convo_layout,
     );
 
-    // Text input
-    let convo_block = Block::new()
+    // Prompt text input
+    let prompt_block = Block::new()
         .borders(Borders::ALL)
-        .style(Color::Yellow)
+        .style(prompt_block_style)
         .title("Prompt:")
-        .title_style(Color::LightYellow);
-    let prompt_area = convo_block.inner(prompt_layout);
-    frame.render_widget(convo_block, prompt_layout);
+        .title_style(prompt_block_style);
+    let prompt_area = prompt_block.inner(prompt_layout);
+    frame.render_widget(prompt_block, prompt_layout);
     frame.render_widget(state.ui.prompt_textarea.widget(), prompt_area);
     Ok(())
 }
