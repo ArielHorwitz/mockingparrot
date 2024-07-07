@@ -98,7 +98,7 @@ async fn handle_conversation(
         }
         // Conversation history focus
         (ConversationFocus::History, Some(hotkey_action)) => {
-            handle_conversation_history(hotkey_action, state)
+            handle_conversation_history(hotkey_action, state);
         }
         _ => (),
     }
