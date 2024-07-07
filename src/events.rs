@@ -37,11 +37,11 @@ async fn handle_keys(key_event: KeyEvent, state: &mut State) -> Result<HandleEve
     if let Some(hotkey_action) = state.hotkey_map.get(&(key_event)) {
         match hotkey_action {
             HotkeyAction::QuitProgram => return Ok(HandleEventResult::Quit),
-            HotkeyAction::NextTab => state.tab = state.tab.next_tab(),
-            HotkeyAction::ViewConversationTab => state.tab = ViewTab::Conversation,
-            HotkeyAction::ViewConfigTab => state.tab = ViewTab::Config,
+            HotkeyAction::NextTab => state.ui.tab = state.ui.tab.next_tab(),
+            HotkeyAction::ViewConversationTab => state.ui.tab = ViewTab::Conversation,
+            HotkeyAction::ViewConfigTab => state.ui.tab = ViewTab::Config,
             _ => {
-                match state.tab {
+                match state.ui.tab {
                     ViewTab::Conversation => {
                         return handle_conversation_keys(key_event, state)
                             .await
@@ -53,7 +53,7 @@ async fn handle_keys(key_event: KeyEvent, state: &mut State) -> Result<HandleEve
             }
         }
     } else {
-        match state.tab {
+        match state.ui.tab {
             ViewTab::Conversation => {
                 return handle_conversation_keys(key_event, state)
                     .await
@@ -70,10 +70,10 @@ fn handle_config_keys(key_event: KeyEvent, state: &mut State) -> HandleEventResu
     if let Some(hotkey_action) = state.hotkey_map.get(&(key_event)) {
         match hotkey_action {
             HotkeyAction::ScrollUp => {
-                state.debug_logs_scroll = state.debug_logs_scroll.saturating_sub(1);
+                state.ui.debug_logs_scroll = state.ui.debug_logs_scroll.saturating_sub(1);
             }
             HotkeyAction::ScrollDown => {
-                state.debug_logs_scroll = state.debug_logs_scroll.saturating_add(1);
+                state.ui.debug_logs_scroll = state.ui.debug_logs_scroll.saturating_add(1);
             }
             HotkeyAction::IncrementTempurature => state.config.chat.temperature += 0.05,
             HotkeyAction::DecrementTempurature => state.config.chat.temperature -= 0.05,
@@ -92,32 +92,33 @@ fn handle_config_keys(key_event: KeyEvent, state: &mut State) -> HandleEventResu
 fn handle_new_conversation_keys(key_event: KeyEvent, state: &mut State) -> HandleEventResult {
     if let Some(hotkey_action) = state.hotkey_map.get(&(key_event)) {
         match hotkey_action {
-            HotkeyAction::Cancel => state.tab = ViewTab::Conversation,
+            HotkeyAction::Cancel => state.ui.tab = ViewTab::Conversation,
             HotkeyAction::Select => {
                 if let Some(system_instructions) = state
                     .config
                     .system
                     .instructions
-                    .get(state.system_instruction_selection)
+                    .get(state.ui.system_instruction_selection)
                 {
                     state.conversation = Conversation::new(system_instructions.message.clone());
                 };
-                state.tab = ViewTab::Conversation;
+                state.ui.tab = ViewTab::Conversation;
             }
             HotkeyAction::SelectionDown => {
-                let new_selection = state.system_instruction_selection.saturating_add(1);
+                let new_selection = state.ui.system_instruction_selection.saturating_add(1);
                 if new_selection >= state.config.system.instructions.len() {
-                    state.system_instruction_selection = 0;
+                    state.ui.system_instruction_selection = 0;
                 } else {
-                    state.system_instruction_selection = new_selection;
+                    state.ui.system_instruction_selection = new_selection;
                 }
             }
             HotkeyAction::SelectionUp => {
                 let new_selection = state
+                    .ui
                     .system_instruction_selection
                     .checked_sub(1)
                     .unwrap_or(state.config.system.instructions.len() - 1);
-                state.system_instruction_selection = new_selection;
+                state.ui.system_instruction_selection = new_selection;
             }
             _ => (),
         }
@@ -132,14 +133,14 @@ async fn handle_conversation_keys(
     if let Some(hotkey_action) = state.hotkey_map.get(&(key_event)) {
         match hotkey_action {
             HotkeyAction::ScrollUp => {
-                state.conversation_scroll = state.conversation_scroll.saturating_sub(1);
+                state.ui.conversation_scroll = state.ui.conversation_scroll.saturating_sub(1);
             }
             HotkeyAction::ScrollDown => {
-                state.conversation_scroll = state.conversation_scroll.saturating_add(1);
+                state.ui.conversation_scroll = state.ui.conversation_scroll.saturating_add(1);
             }
-            HotkeyAction::NewConversation => state.tab = ViewTab::NewConversation,
+            HotkeyAction::NewConversation => state.ui.tab = ViewTab::NewConversation,
             HotkeyAction::SendPrompt => {
-                let text = state.prompt_textarea.lines().join("\n");
+                let text = state.ui.prompt_textarea.lines().join("\n");
                 if text.trim().is_empty() {
                     state.set_status_bar_text("Cannot send empty message.");
                     return Ok(HandleEventResult::None);
@@ -149,21 +150,21 @@ async fn handle_conversation_keys(
                 do_prompt(state).await?;
             }
             HotkeyAction::GetMessageFromEditor => {
-                let initial_text = state.prompt_textarea.lines().join("\n");
+                let initial_text = state.ui.prompt_textarea.lines().join("\n");
                 let message_text =
                     get_message_text_from_editor(&state.config, initial_text.as_str())
                         .context("get message text from editor")?;
-                state.prompt_textarea.select_all();
-                state.prompt_textarea.cut();
-                state.prompt_textarea.insert_str(&message_text);
+                state.ui.prompt_textarea.select_all();
+                state.ui.prompt_textarea.cut();
+                state.ui.prompt_textarea.insert_str(&message_text);
                 return Ok(HandleEventResult::Redraw);
             }
             _ => {
-                state.prompt_textarea.input(key_event);
+                state.ui.prompt_textarea.input(key_event);
             }
         }
     } else {
-        state.prompt_textarea.input(key_event);
+        state.ui.prompt_textarea.input(key_event);
     }
     Ok(HandleEventResult::None)
 }

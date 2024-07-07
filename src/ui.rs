@@ -38,7 +38,7 @@ pub fn draw_frame(frame: &mut Frame, state: &State) -> Result<()> {
     // Status bar
     let now = format!("{}", chrono::Local::now().format("%Y-%m-%d %H:%M:%S"));
     frame.render_widget(
-        Paragraph::new(state.status_bar_text.as_str())
+        Paragraph::new(state.ui.status_bar_text.as_str())
             .bg(Color::DarkGray)
             .fg(Color::LightGreen),
         status_bar_layout,
@@ -51,7 +51,7 @@ pub fn draw_frame(frame: &mut Frame, state: &State) -> Result<()> {
     );
 
     // Main UI
-    match state.tab {
+    match state.ui.tab {
         ViewTab::Conversation => {
             draw_conversation(frame, main_layout, state).context("draw conversation tab")?;
         }
@@ -80,7 +80,7 @@ fn draw_conversation(frame: &mut Frame, rect: Rect, state: &State) -> Result<()>
     };
     let convo_title = format!(
         "Conversation ({}/{})",
-        state.conversation_scroll,
+        state.ui.conversation_scroll,
         state.conversation.messages.len()
     );
     let convo_block = Block::new()
@@ -93,7 +93,7 @@ fn draw_conversation(frame: &mut Frame, rect: Rect, state: &State) -> Result<()>
             .wrap(Wrap { trim: false })
             .bg(Color::Rgb(0, 0, 35))
             .fg(Color::LightGreen)
-            .scroll((state.conversation_scroll, 0))
+            .scroll((state.ui.conversation_scroll, 0))
             .block(convo_block),
         convo_layout,
     );
@@ -106,7 +106,7 @@ fn draw_conversation(frame: &mut Frame, rect: Rect, state: &State) -> Result<()>
         .title_style(Color::LightYellow);
     let prompt_area = convo_block.inner(prompt_layout);
     frame.render_widget(convo_block, prompt_layout);
-    frame.render_widget(state.prompt_textarea.widget(), prompt_area);
+    frame.render_widget(state.ui.prompt_textarea.widget(), prompt_area);
     Ok(())
 }
 
@@ -119,7 +119,7 @@ fn new_conversation(frame: &mut Frame, rect: Rect, state: &State) {
         .map(|i| format!(">> {}\n{}", i.name, i.message));
     let list = List::new(list_items).highlight_style(Color::LightGreen);
     let mut list_state =
-        ListState::default().with_selected(Some(state.system_instruction_selection));
+        ListState::default().with_selected(Some(state.ui.system_instruction_selection));
     frame.render_stateful_widget(list, rect, &mut list_state);
 }
 
@@ -142,14 +142,14 @@ fn draw_config(frame: &mut Frame, rect: Rect, state: &State) -> Result<()> {
     let debug_logs_block = Block::new()
         .title(format!(
             "Debug logs ({}/{})",
-            state.debug_logs_scroll,
-            state.debug_logs.len()
+            state.ui.debug_logs_scroll,
+            state.ui.debug_logs.len()
         ))
         .borders(Borders::TOP | Borders::LEFT);
     frame.render_widget(
-        Paragraph::new(state.debug_logs.join("\n"))
+        Paragraph::new(state.ui.debug_logs.join("\n"))
             .wrap(Wrap { trim: false })
-            .scroll((state.debug_logs_scroll, 0))
+            .scroll((state.ui.debug_logs_scroll, 0))
             .bg(Color::Rgb(30, 30, 0))
             .fg(Color::Rgb(125, 150, 0))
             .block(debug_logs_block),
