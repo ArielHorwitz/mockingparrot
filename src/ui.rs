@@ -53,12 +53,9 @@ pub fn draw_frame(frame: &mut Frame, state: &State) -> Result<()> {
             draw_conversation(frame, main_layout, state, conversation_scope)
                 .context("draw conversation tab")?;
         }
-        Scope::NewConversation => {
-            new_conversation(frame, main_layout, state);
-        }
-        Scope::Config | Scope::Debug => {
-            draw_config(frame, main_layout, state).context("draw config tab")?;
-        }
+        Scope::NewConversation => new_conversation(frame, main_layout, state),
+        Scope::Config => draw_config(frame, main_layout, state),
+        Scope::Debug => draw_debug(frame, main_layout, state),
     };
     Ok(())
 }
@@ -142,22 +139,17 @@ fn new_conversation(frame: &mut Frame, rect: Rect, state: &State) {
     frame.render_stateful_widget(list, rect, &mut list_state);
 }
 
-fn draw_config(frame: &mut Frame, rect: Rect, state: &State) -> Result<()> {
-    let main_layout = Layout::new(
-        Direction::Vertical,
-        [Constraint::Length(9), Constraint::Fill(1)],
-    )
-    .split(rect);
-    let debug_config_layout = *main_layout.first().context("ui index")?;
-    let debug_logs_layout = *main_layout.get(1).context("ui index")?;
-
+fn draw_config(frame: &mut Frame, rect: Rect, state: &State) {
     frame.render_widget(
         Paragraph::new(format!("{:#?}", state.config.chat))
             .wrap(Wrap { trim: false })
             .bg(Color::Rgb(0, 20, 35))
             .fg(Color::Rgb(125, 150, 0)),
-        debug_config_layout,
+        rect,
     );
+}
+
+fn draw_debug(frame: &mut Frame, rect: Rect, state: &State) {
     let debug_logs_block = Block::new()
         .title(format!(
             "Debug logs ({}/{})",
@@ -172,7 +164,7 @@ fn draw_config(frame: &mut Frame, rect: Rect, state: &State) -> Result<()> {
             .bg(Color::Rgb(30, 30, 0))
             .fg(Color::Rgb(125, 150, 0))
             .block(debug_logs_block),
-        debug_logs_layout,
+        rect,
     );
-    Ok(())
 }
+

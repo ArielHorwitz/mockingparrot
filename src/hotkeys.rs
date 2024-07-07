@@ -21,6 +21,7 @@ pub enum HotkeyAction {
     ViewConversationTab,
     NewConversation,
     ViewConfigTab,
+    ViewDebugTab,
     SendPrompt,
     GetMessageFromEditor,
     IncrementTempurature,
@@ -74,7 +75,7 @@ pub fn config_to_map(config_map: HotkeyConfig) -> HotkeyMap {
     map
 }
 
-const DEFAULT_HOTKEY_CONFIG: [(HotkeyAction, (KeyCode, KeyModifiers)); 21] = [
+const DEFAULT_HOTKEY_CONFIG: [(HotkeyAction, (KeyCode, KeyModifiers)); 22] = [
     (
         HotkeyAction::QuitProgram,
         (KeyCode::Char('q'), KeyModifiers::CONTROL),
@@ -109,6 +110,10 @@ const DEFAULT_HOTKEY_CONFIG: [(HotkeyAction, (KeyCode, KeyModifiers)); 21] = [
     (
         HotkeyAction::ViewConfigTab,
         (KeyCode::F(2), KeyModifiers::NONE),
+    ),
+    (
+        HotkeyAction::ViewDebugTab,
+        (KeyCode::F(3), KeyModifiers::NONE),
     ),
     (
         HotkeyAction::SendPrompt,
