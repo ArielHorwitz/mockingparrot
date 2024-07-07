@@ -35,7 +35,10 @@ async fn handle_keys(key_event: KeyEvent, state: &mut State) -> Result<HandleEve
     if key_event.kind != KeyEventKind::Press {
         return Ok(HandleEventResult::None);
     }
-    match (state.ui.focus.get_scope(), state.hotkey_map.get(&key_event).copied()) {
+    match (
+        state.ui.focus.get_scope(),
+        state.hotkey_map.get(&key_event).copied(),
+    ) {
         // Global hotkeys
         (_, Some(HotkeyAction::QuitProgram)) => return Ok(HandleEventResult::Quit),
         (_, Some(HotkeyAction::ViewConversationTab)) => {
@@ -45,7 +48,8 @@ async fn handle_keys(key_event: KeyEvent, state: &mut State) -> Result<HandleEve
         (_, Some(HotkeyAction::ViewDebugTab)) => state.ui.focus.set_tab(TabFocus::Debug),
         // Scoped hotkeys
         (Scope::Conversation(conversation_focus), hotkey_action_option) => {
-            return handle_conversation(hotkey_action_option, state, conversation_focus, key_event).await;
+            return handle_conversation(hotkey_action_option, state, conversation_focus, key_event)
+                .await;
         }
         (Scope::Debug, Some(hotkey_action)) => handle_debug(hotkey_action, state),
         (Scope::NewConversation, Some(hotkey_action)) => {
@@ -93,7 +97,9 @@ async fn handle_conversation(
             state.ui.prompt_textarea.input(key_event);
         }
         // Conversation history focus
-        (ConversationFocus::History, Some(hotkey_action)) => handle_conversation_history(hotkey_action, state),
+        (ConversationFocus::History, Some(hotkey_action)) => {
+            handle_conversation_history(hotkey_action, state)
+        }
         _ => (),
     }
     Ok(HandleEventResult::None)

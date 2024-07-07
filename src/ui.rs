@@ -167,4 +167,3 @@ fn draw_debug(frame: &mut Frame, rect: Rect, state: &State) {
         rect,
     );
 }
-
