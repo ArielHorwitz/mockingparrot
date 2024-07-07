@@ -116,7 +116,7 @@ fn handle_conversation_history(hotkey_action: HotkeyAction, state: &mut State) {
         HotkeyAction::ScrollDown => {
             state.ui.conversation_scroll = state.ui.conversation_scroll.saturating_add(1);
         }
-        HotkeyAction::NewConversation => {
+        HotkeyAction::New => {
             state.ui.focus.set_tab(TabFocus::NewConversation);
         }
         _ => (),

@@ -13,13 +13,13 @@ pub enum HotkeyAction {
     QuitProgram,
     Select,
     Cancel,
+    New,
     SelectionUp,
     SelectionDown,
     ScrollUp,
     ScrollDown,
     NextTab,
     ViewConversationTab,
-    NewConversation,
     ViewConfigTab,
     ViewDebugTab,
     SendPrompt,
@@ -82,6 +82,10 @@ const DEFAULT_HOTKEY_CONFIG: [(HotkeyAction, (KeyCode, KeyModifiers)); 22] = [
     ),
     (HotkeyAction::Select, (KeyCode::Enter, KeyModifiers::NONE)),
     (HotkeyAction::Cancel, (KeyCode::Esc, KeyModifiers::NONE)),
+    (
+        HotkeyAction::New,
+        (KeyCode::Char('n'), KeyModifiers::CONTROL),
+    ),
     (HotkeyAction::SelectionUp, (KeyCode::Up, KeyModifiers::NONE)),
     (
         HotkeyAction::SelectionDown,
@@ -102,10 +106,6 @@ const DEFAULT_HOTKEY_CONFIG: [(HotkeyAction, (KeyCode, KeyModifiers)); 22] = [
     (
         HotkeyAction::ViewConversationTab,
         (KeyCode::F(1), KeyModifiers::NONE),
-    ),
-    (
-        HotkeyAction::NewConversation,
-        (KeyCode::Char('n'), KeyModifiers::CONTROL),
     ),
     (
         HotkeyAction::ViewConfigTab,
