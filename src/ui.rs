@@ -136,7 +136,14 @@ fn new_conversation(frame: &mut Frame, rect: Rect, state: &State) {
     let list = List::new(list_items).highlight_style(Color::LightGreen);
     let mut list_state =
         ListState::default().with_selected(Some(state.ui.system_instruction_selection));
-    frame.render_stateful_widget(list, rect, &mut list_state);
+    let block = Block::new()
+        .borders(Borders::ALL)
+        .border_style(Color::LightCyan)
+        .title("New conversation with system instructions:")
+        .title_style(Color::LightCyan);
+    let list_area = block.inner(rect);
+    frame.render_widget(block, rect);
+    frame.render_stateful_widget(list, list_area, &mut list_state);
 }
 
 fn draw_config(frame: &mut Frame, rect: Rect, state: &State) {
