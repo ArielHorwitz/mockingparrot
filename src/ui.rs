@@ -8,7 +8,7 @@ use ratatui::{
     Frame,
 };
 
-const STATUSBAR_HELP_TEXT: &str = "Ctrl+q - Quit, F1 - conversation, F2 - config/debug";
+const STATUSBAR_HELP_TEXT: &str = "Ctrl+q - Quit, F1 - conversation, F2 - config, F3 - debug";
 
 pub fn draw_frame(frame: &mut Frame, state: &State) -> Result<()> {
     let layout = Layout::new(
