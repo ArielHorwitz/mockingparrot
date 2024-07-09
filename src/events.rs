@@ -46,6 +46,7 @@ async fn handle_keys(key_event: KeyEvent, state: &mut State) -> Result<HandleEve
         }
         (_, Some(HotkeyAction::ViewConfigTab)) => state.ui.focus.set_tab(TabFocus::Config),
         (_, Some(HotkeyAction::ViewDebugTab)) => state.ui.focus.set_tab(TabFocus::Debug),
+        (_, Some(HotkeyAction::CycleTab)) => state.ui.focus.cycle_tab(),
         // Scoped hotkeys
         (Scope::Conversation(conversation_focus), hotkey_action_option) => {
             return handle_conversation(hotkey_action_option, state, conversation_focus, key_event)

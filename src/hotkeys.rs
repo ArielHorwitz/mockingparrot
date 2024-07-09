@@ -18,7 +18,7 @@ pub enum HotkeyAction {
     SelectionDown,
     ScrollUp,
     ScrollDown,
-    NextTab,
+    CycleTab,
     ViewConversationTab,
     ViewConfigTab,
     ViewDebugTab,
@@ -100,8 +100,8 @@ const DEFAULT_HOTKEY_CONFIG: [(HotkeyAction, (KeyCode, KeyModifiers)); 22] = [
         (KeyCode::PageDown, KeyModifiers::NONE),
     ),
     (
-        HotkeyAction::NextTab,
-        (KeyCode::BackTab, KeyModifiers::SHIFT),
+        HotkeyAction::CycleTab,
+        (KeyCode::Tab, KeyModifiers::NONE),
     ),
     (
         HotkeyAction::ViewConversationTab,

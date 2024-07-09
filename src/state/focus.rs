@@ -18,6 +18,14 @@ impl Focus {
     pub fn set_tab(&mut self, tab: Tab) {
         self.tab = tab;
     }
+
+    pub fn cycle_tab(&mut self) {
+        self.tab = match self.tab {
+            Tab::Conversation => Tab::Config,
+            Tab::Config => Tab::Debug,
+            Tab::Debug | Tab::NewConversation => Tab::Conversation,
+        };
+    }
 }
 
 impl Default for Focus {
