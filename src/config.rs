@@ -1,4 +1,5 @@
 use anyhow::{Context, Result};
+use ratatui::prelude::Color;
 use serde::Deserialize;
 use std::path::Path;
 
@@ -51,6 +52,21 @@ pub struct Chat {
 #[derive(Debug, Deserialize, Clone)]
 pub struct Ui {
     pub editor_command: Vec<String>,
+    pub colors: Colors,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct Colors {
+    pub conversation: BgFgColors,
+    pub prompt: BgFgColors,
+    pub config: BgFgColors,
+    pub debug: BgFgColors,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct BgFgColors {
+    pub background: Color,
+    pub foreground: Color,
 }
 
 #[derive(Debug, Deserialize, Clone)]

@@ -26,7 +26,11 @@ impl State {
             .clone();
 
         let mut prompt_textarea = TextArea::default();
-        prompt_textarea.set_style(Style::new().bg(Color::Rgb(0, 25, 25)).fg(Color::White));
+        prompt_textarea.set_style(
+            Style::new()
+                .bg(config.ui.colors.prompt.background)
+                .fg(config.ui.colors.prompt.foreground),
+        );
         prompt_textarea.set_line_number_style(Style::new().bg(Color::Black).fg(Color::Cyan));
         prompt_textarea.set_cursor_style(Style::new().bg(Color::Rgb(200, 200, 200)));
         prompt_textarea.set_cursor_line_style(Style::new());

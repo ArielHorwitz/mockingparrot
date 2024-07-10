@@ -77,12 +77,16 @@ fn draw_conversation(
     // Styles for focus
     let (convo_block_style, prompt_block_style) = match conversation_scope {
         ConversationFocus::History => (
-            Style::new().fg(Color::LightCyan),
-            Style::new().fg(Color::Yellow),
+            Style::new().fg(state.config.ui.colors.conversation.foreground),
+            Style::new()
+                .fg(state.config.ui.colors.prompt.foreground)
+                .dim(),
         ),
         ConversationFocus::Prompt => (
-            Style::new().fg(Color::Blue),
-            Style::new().fg(Color::LightYellow),
+            Style::new()
+                .fg(state.config.ui.colors.conversation.foreground)
+                .dim(),
+            Style::new().fg(state.config.ui.colors.prompt.foreground),
         ),
     };
 
@@ -107,8 +111,8 @@ fn draw_conversation(
     frame.render_widget(
         Paragraph::new(convo)
             .wrap(Wrap { trim: false })
-            .bg(Color::Rgb(0, 0, 35))
-            .fg(Color::LightGreen)
+            .bg(state.config.ui.colors.conversation.background)
+            .fg(state.config.ui.colors.conversation.foreground)
             .scroll((state.ui.conversation_scroll, 0))
             .block(convo_block),
         convo_layout,
@@ -150,8 +154,8 @@ fn draw_config(frame: &mut Frame, rect: Rect, state: &State) {
     frame.render_widget(
         Paragraph::new(format!("{:#?}", state.config.chat))
             .wrap(Wrap { trim: false })
-            .bg(Color::Rgb(0, 20, 35))
-            .fg(Color::Rgb(125, 150, 0)),
+            .bg(state.config.ui.colors.config.background)
+            .fg(state.config.ui.colors.config.foreground),
         rect,
     );
 }
@@ -168,8 +172,8 @@ fn draw_debug(frame: &mut Frame, rect: Rect, state: &State) {
         Paragraph::new(state.ui.debug_logs.join("\n"))
             .wrap(Wrap { trim: false })
             .scroll((state.ui.debug_logs_scroll, 0))
-            .bg(Color::Rgb(30, 30, 0))
-            .fg(Color::Rgb(125, 150, 0))
+            .bg(state.config.ui.colors.debug.background)
+            .fg(state.config.ui.colors.debug.foreground)
             .block(debug_logs_block),
         rect,
     );
