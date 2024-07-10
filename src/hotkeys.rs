@@ -99,10 +99,7 @@ const DEFAULT_HOTKEY_CONFIG: [(HotkeyAction, (KeyCode, KeyModifiers)); 22] = [
         HotkeyAction::ScrollDown,
         (KeyCode::PageDown, KeyModifiers::NONE),
     ),
-    (
-        HotkeyAction::CycleTab,
-        (KeyCode::Tab, KeyModifiers::NONE),
-    ),
+    (HotkeyAction::CycleTab, (KeyCode::Tab, KeyModifiers::NONE)),
     (
         HotkeyAction::ViewConversationTab,
         (KeyCode::F(1), KeyModifiers::NONE),
