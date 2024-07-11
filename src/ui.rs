@@ -92,7 +92,7 @@ fn draw_conversation(
 
     // Conversation display
     let convo = if state.config.api.key.is_empty() {
-        format!("MISSING API KEY!\n\nEnter your API key in your config file to start chatting.\nThe config file is located at: ~/{}", crate::config::CONFIG_FILE_PATH)
+        format!("MISSING API KEY!\n\nEnter your API key in your config file to start chatting.\nThe config file is located at: ~/{}", state.paths.config_file.display())
     } else {
         state.conversation.to_string()
     };
@@ -152,7 +152,7 @@ fn new_conversation(frame: &mut Frame, rect: Rect, state: &State) {
 
 fn draw_config(frame: &mut Frame, rect: Rect, state: &State) {
     frame.render_widget(
-        Paragraph::new(format!("{:#?}", state.config.chat))
+        Paragraph::new(format!("Config file: {}\n{:#?}", state.paths.config_file.display(), state.config.chat))
             .wrap(Wrap { trim: false })
             .bg(state.config.ui.colors.config.background)
             .fg(state.config.ui.colors.config.foreground),

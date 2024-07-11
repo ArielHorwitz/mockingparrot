@@ -83,7 +83,7 @@ async fn handle_conversation(
         }
         (_, Some(HotkeyAction::GetMessageFromEditor)) => {
             let initial_text = state.ui.prompt_textarea.lines().join("\n");
-            let message_text = get_message_text_from_editor(&state.config, initial_text.as_str())
+            let message_text = get_message_text_from_editor(state, initial_text.as_str())
                 .context("get message text from editor")?;
             state.ui.prompt_textarea.select_all();
             state.ui.prompt_textarea.cut();

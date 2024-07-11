@@ -3,7 +3,6 @@ use crossterm::ExecutableCommand;
 use ratatui::prelude::{Backend, CrosstermBackend, Terminal};
 use std::io::stdout;
 
-use mockingparrot::config::{get_config_from_file, Config};
 use mockingparrot::events;
 use mockingparrot::state::State;
 use mockingparrot::ui;
@@ -18,7 +17,7 @@ async fn main() {
 }
 
 async fn run() -> Result<()> {
-    let config = get_config_from_file().context("get config from file")?;
+    let state = State::new().context("new app state")?;
     // Setup terminal
     stdout()
         .execute(crossterm::terminal::EnterAlternateScreen)
@@ -28,7 +27,7 @@ async fn run() -> Result<()> {
         .context("new terminal with crossterm backend")?;
     terminal.clear().context("clear terminal")?;
     // Run app
-    let app_result = run_app(&mut terminal, config).await;
+    let app_result = run_app(&mut terminal, state).await;
     // Clean up terminal
     stdout()
         .execute(crossterm::terminal::LeaveAlternateScreen)
@@ -38,8 +37,7 @@ async fn run() -> Result<()> {
     app_result
 }
 
-async fn run_app(terminal: &mut Terminal<impl Backend>, config: Config) -> Result<()> {
-    let mut state = State::from_config(config.clone()).context("new app state")?;
+async fn run_app(terminal: &mut Terminal<impl Backend>, mut state: State) -> Result<()> {
     loop {
         terminal
             .draw(|frame| {

@@ -2,6 +2,7 @@ use crate::{api::GptMessage, config::Config};
 use anyhow::{Context, Result};
 use ratatui::{prelude::Style, style::Color};
 use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 use tui_textarea::TextArea;
 
 pub mod focus;
@@ -11,12 +12,16 @@ pub use focus::Focus;
 pub struct State {
     pub config: Config,
     pub hotkey_map: crate::hotkeys::HotkeyMap,
+    pub paths: Paths,
     pub conversation: Conversation,
     pub ui: Ui,
 }
 
 impl State {
-    pub fn from_config(config: Config) -> Result<Self> {
+    pub fn new() -> Result<Self> {
+        let paths = Paths::generate_dirs().context("generate directories")?;
+        let config = crate::config::get_config_from_file(&paths.config_file)
+            .context("get config from file")?;
         let system_instructions = config
             .system
             .instructions
@@ -47,6 +52,7 @@ impl State {
         let mut state = Self {
             config,
             hotkey_map,
+            paths,
             conversation: Conversation::new(system_instructions),
             ui,
         };
@@ -62,6 +68,38 @@ impl State {
         self.ui
             .debug_logs
             .push(format!("{} | {}", get_timestamp(), log.into()));
+    }
+}
+
+pub struct Paths {
+    pub data_dir: PathBuf,
+    pub config_dir: PathBuf,
+    pub config_file: PathBuf,
+    pub message_file: PathBuf,
+}
+
+impl Paths {
+    fn generate_dirs() -> Result<Self> {
+        let config_dir = dirs::config_dir()
+            .context("get config directory")?
+            .join(crate::APP_TITLE.to_lowercase());
+        let data_dir = dirs::data_dir()
+            .context("get data directory")?
+            .join(crate::APP_TITLE.to_lowercase());
+        if !config_dir.exists() {
+            std::fs::create_dir_all(&config_dir).context("create config directory")?;
+        }
+        if !data_dir.exists() {
+            std::fs::create_dir_all(&data_dir).context("create data directory")?;
+        }
+        let config_file = config_dir.join("config.toml");
+        let message_file = data_dir.join("message_text");
+        Ok(Self {
+            data_dir,
+            config_dir,
+            config_file,
+            message_file,
+        })
     }
 }
 

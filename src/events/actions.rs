@@ -5,24 +5,15 @@ use std::process::Command;
 
 const API_ERROR_FEEDBACK: &str = "An error occured, see debug logs.";
 const API_ERROR_SYSTEM_MESSAGE: &str = "Failed to get a response from the assistant.";
-const MESSAGE_FILE: &str = ".local/share/mockingparrot/message_text";
 
-pub fn get_message_text_from_editor(
-    config: &crate::config::Config,
-    initial_text: &str,
-) -> Result<String> {
-    let user_home_dir = std::env::var("HOME").context("get HOME environment variable")?;
-    let message_file = std::path::Path::new(&user_home_dir).join(MESSAGE_FILE);
-    let message_dir = message_file
-        .parent()
-        .expect("get message file parent directory");
-    std::fs::create_dir_all(message_dir).context("create directory for message file")?;
-    std::fs::write(&message_file, initial_text).context("write initial text to message file")?;
-    let mut editor_command_iter = config.ui.editor_command.iter();
+pub fn get_message_text_from_editor(state: &State, initial_text: &str) -> Result<String> {
+    std::fs::write(&state.paths.message_file, initial_text)
+        .context("write initial text to message file")?;
+    let mut editor_command_iter = state.config.ui.editor_command.iter();
     let editor_process_output =
         Command::new(editor_command_iter.next().context("editor command empty")?)
             .args(editor_command_iter.collect::<Vec<&String>>())
-            .arg(&message_file)
+            .arg(&state.paths.message_file)
             .output()
             .context("run editor")?;
     if !editor_process_output.status.success() {
@@ -31,7 +22,7 @@ pub fn get_message_text_from_editor(
             editor_process_output.status
         ));
     }
-    let message_text = std::fs::read_to_string(message_file)
+    let message_text = std::fs::read_to_string(&state.paths.message_file)
         .context("read text from message file")?
         .trim()
         .to_owned();
