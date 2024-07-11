@@ -152,10 +152,14 @@ fn new_conversation(frame: &mut Frame, rect: Rect, state: &State) {
 
 fn draw_config(frame: &mut Frame, rect: Rect, state: &State) {
     frame.render_widget(
-        Paragraph::new(format!("Config file: {}\n{:#?}", state.paths.config_file.display(), state.config.chat))
-            .wrap(Wrap { trim: false })
-            .bg(state.config.ui.colors.config.background)
-            .fg(state.config.ui.colors.config.foreground),
+        Paragraph::new(format!(
+            "Config file: {}\n{:#?}",
+            state.paths.config_file.display(),
+            state.config.chat
+        ))
+        .wrap(Wrap { trim: false })
+        .bg(state.config.ui.colors.config.background)
+        .fg(state.config.ui.colors.config.foreground),
         rect,
     );
 }
