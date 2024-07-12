@@ -1,4 +1,7 @@
-use crate::{api::GptMessage, config::Config};
+use crate::{
+    api::GptMessage,
+    config::{get_config_from_file, Config},
+};
 use anyhow::{Context, Result};
 use ratatui::{prelude::Style, style::Color};
 use serde::{Deserialize, Serialize};
@@ -7,7 +10,7 @@ use tui_textarea::TextArea;
 
 pub mod focus;
 
-pub use focus::Focus;
+use focus::Focus;
 
 pub struct State {
     pub config: Config,
@@ -20,8 +23,7 @@ pub struct State {
 impl State {
     pub fn new() -> Result<Self> {
         let paths = Paths::generate_dirs().context("generate directories")?;
-        let config = crate::config::get_config_from_file(&paths.config_file)
-            .context("get config from file")?;
+        let config = get_config_from_file(&paths.config_file).context("get config from file")?;
         let system_instructions = config
             .system
             .instructions
