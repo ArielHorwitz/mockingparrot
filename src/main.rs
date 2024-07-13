@@ -41,7 +41,7 @@ async fn run_app(terminal: &mut Terminal<impl Backend>, mut state: State) -> Res
     loop {
         terminal
             .draw(|frame| {
-                if let Err(e) = ui::draw_frame(frame, &state) {
+                if let Err(e) = ui::draw_frame(frame, &mut state) {
                     todo!("log error: {e}");
                 }
             })

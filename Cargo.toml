@@ -8,7 +8,7 @@ anyhow = "1.0.83"
 chrono = "0.4.38"
 crossterm = { version = "0.27.0", features = ["serde"] }
 dirs = "5.0.1"
-ratatui = { version = "0.26.2", features = ["all-widgets", "serde"] }
+ratatui = { version = "0.26.2", features = ["all-widgets", "serde", "unstable-rendered-line-info"] }
 reqwest = { version = "0.12.4", features = ["json"] }
 serde = { version = "1.0.203", features = ["derive"] }
 serde_json = "1.0.118"

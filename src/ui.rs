@@ -2,15 +2,19 @@ use crate::state::focus::{Conversation as ConversationFocus, Scope};
 use crate::state::State;
 use anyhow::{Context, Result};
 use ratatui::{
+    layout::Margin,
     prelude::{Constraint, Direction, Layout, Rect, Style, Stylize},
     style::Color,
-    widgets::{Block, Borders, List, ListState, Paragraph, Wrap},
+    widgets::{
+        Block, Borders, List, ListState, Paragraph, Scrollbar, ScrollbarOrientation,
+        ScrollbarState, Wrap,
+    },
     Frame,
 };
 
 const STATUSBAR_HELP_TEXT: &str = "Ctrl+q - Quit, F1 - conversation, F2 - config, F3 - debug";
 
-pub fn draw_frame(frame: &mut Frame, state: &State) -> Result<()> {
+pub fn draw_frame(frame: &mut Frame, state: &mut State) -> Result<()> {
     let layout = Layout::new(
         Direction::Vertical,
         [
@@ -63,7 +67,7 @@ pub fn draw_frame(frame: &mut Frame, state: &State) -> Result<()> {
 fn draw_conversation(
     frame: &mut Frame,
     rect: Rect,
-    state: &State,
+    state: &mut State,
     conversation_scope: ConversationFocus,
 ) -> Result<()> {
     let layout = Layout::new(
@@ -96,27 +100,32 @@ fn draw_conversation(
     } else {
         state.conversation.to_string()
     };
-    let convo_title = format!(
-        "Conversation ({}/{})",
-        state.ui.conversation_scroll,
-        state.conversation.messages.len()
-    );
 
     let convo_block = Block::new()
         .borders(Borders::ALL)
         .style(convo_block_style)
-        .title(convo_title)
+        .title("Conversation")
         .title_style(convo_block_style);
+    let convo_text = Paragraph::new(convo)
+        .wrap(Wrap { trim: false })
+        .bg(state.config.ui.colors.conversation.background)
+        .fg(state.config.ui.colors.conversation.foreground)
+        .scroll((state.ui.conversation_scroll, 0))
+        .block(convo_block);
 
-    frame.render_widget(
-        Paragraph::new(convo)
-            .wrap(Wrap { trim: false })
-            .bg(state.config.ui.colors.conversation.background)
-            .fg(state.config.ui.colors.conversation.foreground)
-            .scroll((state.ui.conversation_scroll, 0))
-            .block(convo_block),
-        convo_layout,
-    );
+    let line_count = convo_text.line_count(convo_layout.width - 2);
+    let max_scroll = u16::try_from(line_count).unwrap_or(u16::MAX);
+    state.ui.conversation_scroll = state.ui.conversation_scroll.min(max_scroll);
+    let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight);
+    let mut scrollbar_state =
+        ScrollbarState::new(max_scroll as usize).position(state.ui.conversation_scroll as usize);
+    let scrollbar_area = convo_layout.inner(&ratatui::layout::Margin {
+        horizontal: 1,
+        vertical: 1,
+    });
+
+    frame.render_widget(convo_text, convo_layout);
+    frame.render_stateful_widget(scrollbar, scrollbar_area, &mut scrollbar_state);
 
     // Prompt text input
     let prompt_block = Block::new()
@@ -130,7 +139,7 @@ fn draw_conversation(
     Ok(())
 }
 
-fn new_conversation(frame: &mut Frame, rect: Rect, state: &State) {
+fn new_conversation(frame: &mut Frame, rect: Rect, state: &mut State) {
     let list_items = state
         .config
         .system
@@ -150,7 +159,7 @@ fn new_conversation(frame: &mut Frame, rect: Rect, state: &State) {
     frame.render_stateful_widget(list, list_area, &mut list_state);
 }
 
-fn draw_config(frame: &mut Frame, rect: Rect, state: &State) {
+fn draw_config(frame: &mut Frame, rect: Rect, state: &mut State) {
     frame.render_widget(
         Paragraph::new(format!(
             "Config file: {}\n{:#?}",
@@ -164,21 +173,27 @@ fn draw_config(frame: &mut Frame, rect: Rect, state: &State) {
     );
 }
 
-fn draw_debug(frame: &mut Frame, rect: Rect, state: &State) {
-    let debug_logs_block = Block::new()
-        .title(format!(
-            "Debug logs ({}/{})",
-            state.ui.debug_logs_scroll,
-            state.ui.debug_logs.len()
-        ))
-        .borders(Borders::TOP | Borders::LEFT);
-    frame.render_widget(
-        Paragraph::new(state.ui.debug_logs.join("\n"))
-            .wrap(Wrap { trim: false })
-            .scroll((state.ui.debug_logs_scroll, 0))
-            .bg(state.config.ui.colors.debug.background)
-            .fg(state.config.ui.colors.debug.foreground)
-            .block(debug_logs_block),
-        rect,
-    );
+fn draw_debug(frame: &mut Frame, rect: Rect, state: &mut State) {
+    let debug_logs_block = Block::new().title("Debug logs").borders(Borders::ALL);
+
+    let debug_text = Paragraph::new(state.ui.debug_logs.join("\n"))
+        .wrap(Wrap { trim: false })
+        .scroll((state.ui.debug_logs_scroll, 0))
+        .bg(state.config.ui.colors.debug.background)
+        .fg(state.config.ui.colors.debug.foreground)
+        .block(debug_logs_block);
+
+    let line_count = debug_text.line_count(rect.width - 2);
+    let max_scroll = u16::try_from(line_count).unwrap_or(u16::MAX);
+    state.ui.debug_logs_scroll = state.ui.debug_logs_scroll.min(max_scroll);
+    let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight);
+    let mut scrollbar_state =
+        ScrollbarState::new(max_scroll as usize).position(state.ui.debug_logs_scroll as usize);
+    let scrollbar_area = rect.inner(&Margin {
+        horizontal: 1,
+        vertical: 1,
+    });
+
+    frame.render_widget(debug_text, rect);
+    frame.render_stateful_widget(scrollbar, scrollbar_area, &mut scrollbar_state);
 }
