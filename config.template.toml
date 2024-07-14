@@ -15,14 +15,15 @@ presence_penalty = 0
 editor_command = ["gedit", "--standalone"]
 
 [ui.colors]
-conversation.background = "#112244"
-conversation.foreground = "bright-green"
-prompt.background = "#112244"
-prompt.foreground = "bright-green"
-config.background = "#112244"
-config.foreground = "bright-green"
-debug.background = "#112244"
-debug.foreground = "bright-green"
+conversation.background = "#020414"
+conversation.foreground = "#33DD88"
+conversation_names = "#DD4400"
+prompt.background = "#110000"
+prompt.foreground = "#DDCC04"
+config.background = "#020414"
+config.foreground = "#FF5511"
+debug.background = "#020414"
+debug.foreground = "#5511FF"
 
 [hotkeys]
 quit_program = [ {code = { Char = "q" }, modifiers = "CONTROL"} ]

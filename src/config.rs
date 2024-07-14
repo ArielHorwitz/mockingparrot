@@ -56,6 +56,7 @@ pub struct Ui {
 #[derive(Debug, Deserialize, Clone)]
 pub struct Colors {
     pub conversation: BgFgColors,
+    pub conversation_names: Color,
     pub prompt: BgFgColors,
     pub config: BgFgColors,
     pub debug: BgFgColors,

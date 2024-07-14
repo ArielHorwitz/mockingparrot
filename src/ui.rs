@@ -3,7 +3,7 @@ use crate::state::State;
 use anyhow::{Context, Result};
 use ratatui::{
     layout::Margin,
-    prelude::{Constraint, Direction, Layout, Rect, Style, Stylize},
+    prelude::{Constraint, Direction, Layout, Line, Rect, Style, Stylize, Text},
     style::Color,
     widgets::{
         Block, Borders, List, ListState, Paragraph, Scrollbar, ScrollbarOrientation,
@@ -100,10 +100,35 @@ fn draw_conversation(
     };
 
     // Conversation display
+    let convo_text_style = Style::new().fg(state.config.ui.colors.conversation.foreground);
+    let convo_name_style = Style::new()
+        .fg(state.config.ui.colors.conversation_names)
+        .bold();
     let convo = if state.config.api.key.is_empty() {
-        format!("MISSING API KEY!\n\nEnter your API key in your config file to start chatting.\nThe config file is located at: ~/{}", state.paths.config_file.display())
+        Text::from_iter([
+            Line::styled("Missing API key", Style::new().fg(Color::LightRed)),
+            Line::default(),
+            Line::styled(
+                "Enter your API key in your config file to start chatting:",
+                convo_text_style,
+            ),
+            Line::styled(
+                state.paths.config_file.to_string_lossy(),
+                Style::new().fg(Color::Yellow).bold(),
+            ),
+        ])
     } else {
-        state.conversation.to_string()
+        let mut lines = Vec::new();
+        for message in &state.conversation.messages {
+            lines.push(Line::styled(
+                format!("{:?}:", message.role),
+                convo_name_style,
+            ));
+            for line in message.content.lines() {
+                lines.push(Line::styled(line, convo_text_style));
+            }
+        }
+        Text::from_iter(lines)
     };
 
     let convo_block = Block::new()
@@ -114,7 +139,6 @@ fn draw_conversation(
     let convo_text = Paragraph::new(convo)
         .wrap(Wrap { trim: false })
         .bg(state.config.ui.colors.conversation.background)
-        .fg(state.config.ui.colors.conversation.foreground)
         .scroll((state.ui.conversation_scroll, 0))
         .block(convo_block);
 
