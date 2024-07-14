@@ -79,18 +79,23 @@ fn draw_conversation(
     let prompt_layout = *layout.get(1).context("ui index")?;
 
     // Styles for focus
-    let (convo_block_style, prompt_block_style) = match conversation_scope {
+    let (convo_block_style, prompt_style, cursor_style) = match conversation_scope {
         ConversationFocus::History => (
             Style::new().fg(state.config.ui.colors.conversation.foreground),
             Style::new()
+                .bg(state.config.ui.colors.prompt.background)
                 .fg(state.config.ui.colors.prompt.foreground)
                 .dim(),
+            Style::new(),
         ),
         ConversationFocus::Prompt => (
             Style::new()
                 .fg(state.config.ui.colors.conversation.foreground)
                 .dim(),
-            Style::new().fg(state.config.ui.colors.prompt.foreground),
+            Style::new()
+                .bg(state.config.ui.colors.prompt.background)
+                .fg(state.config.ui.colors.prompt.foreground),
+            Style::new().bg(Color::Rgb(200, 200, 200)),
         ),
     };
 
@@ -128,11 +133,14 @@ fn draw_conversation(
     frame.render_stateful_widget(scrollbar, scrollbar_area, &mut scrollbar_state);
 
     // Prompt text input
+    state.ui.prompt_textarea.set_cursor_line_style(Style::new());
+    state.ui.prompt_textarea.set_cursor_style(cursor_style);
+    state.ui.prompt_textarea.set_style(prompt_style);
     let prompt_block = Block::new()
         .borders(Borders::ALL)
-        .style(prompt_block_style)
-        .title("Prompt:")
-        .title_style(prompt_block_style);
+        .style(prompt_style)
+        .title("Prompt")
+        .title_style(prompt_style);
     let prompt_area = prompt_block.inner(prompt_layout);
     frame.render_widget(prompt_block, prompt_layout);
     frame.render_widget(state.ui.prompt_textarea.widget(), prompt_area);

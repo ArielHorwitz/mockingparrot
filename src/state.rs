@@ -3,7 +3,6 @@ use crate::{
     config::{get_config_from_file, Config},
 };
 use anyhow::{Context, Result};
-use ratatui::{prelude::Style, style::Color};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tui_textarea::TextArea;
@@ -32,19 +31,11 @@ impl State {
             .message
             .clone();
 
-        let mut prompt_textarea = TextArea::default();
-        prompt_textarea.set_style(
-            Style::new()
-                .bg(config.ui.colors.prompt.background)
-                .fg(config.ui.colors.prompt.foreground),
-        );
-        prompt_textarea.set_cursor_style(Style::new().bg(Color::Rgb(200, 200, 200)));
-        prompt_textarea.set_cursor_line_style(Style::new());
         let hotkey_map = crate::hotkeys::config_to_map(config.hotkeys.clone());
         let ui = Ui {
             focus: Focus::default(),
             status_bar_text: format!("Welcome to {}", crate::APP_TITLE),
-            prompt_textarea,
+            prompt_textarea: TextArea::default(),
             conversation_scroll: 0,
             debug_logs: Vec::new(),
             debug_logs_scroll: 0,
