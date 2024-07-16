@@ -31,7 +31,7 @@ impl State {
             .message
             .clone();
 
-        let hotkey_map = crate::hotkeys::config_to_map(config.hotkeys.clone());
+        let hotkey_map = crate::hotkeys::get_hotkey_config(config.hotkeys.clone());
         let ui = Ui {
             focus: Focus::default(),
             status_bar_text: format!("Welcome to {}", crate::APP_TITLE),
