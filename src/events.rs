@@ -94,6 +94,10 @@ async fn handle_conversation(
         (ConversationFocus::Prompt, Some(HotkeyAction::Cancel)) => {
             state.ui.focus.conversation = ConversationFocus::History;
         }
+        (ConversationFocus::Prompt, Some(HotkeyAction::Clear)) => {
+            state.ui.prompt_textarea.select_all();
+            state.ui.prompt_textarea.cut();
+        }
         (ConversationFocus::Prompt, _) => {
             state.ui.prompt_textarea.input(key_event);
         }
