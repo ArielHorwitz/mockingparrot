@@ -149,7 +149,7 @@ fn draw_conversation(
     let mut scrollbar_state =
         ScrollbarState::new(max_scroll as usize).position(state.ui.conversation_scroll as usize);
     let scrollbar_area = convo_layout.inner(&ratatui::layout::Margin {
-        horizontal: 1,
+        horizontal: 0,
         vertical: 1,
     });
 
