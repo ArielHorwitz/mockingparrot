@@ -19,20 +19,14 @@ pub enum HotkeyAction {
     SelectionDown,
     ScrollUp,
     ScrollDown,
+    Increment,
+    Decrement,
     CycleTab,
     ViewConversationTab,
     ViewConfigTab,
     ViewDebugTab,
     SendPrompt,
     GetMessageFromEditor,
-    IncrementTempurature,
-    DecrementTempurature,
-    IncrementTopP,
-    DecrementTopP,
-    IncrementFrequencyPenalty,
-    DecrementFrequencyPenalty,
-    IncrementPresencePenalty,
-    DecrementPresencePenalty,
 }
 
 #[derive(Debug, Serialize, Deserialize, Hash, Clone, Copy, PartialEq, Eq)]

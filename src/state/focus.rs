@@ -2,6 +2,7 @@
 pub struct Focus {
     pub tab: Tab,
     pub conversation: Conversation,
+    pub config: Config,
 }
 
 impl Focus {
@@ -10,7 +11,7 @@ impl Focus {
         match self.tab {
             Tab::Conversation => Scope::Conversation(self.conversation),
             Tab::NewConversation => Scope::NewConversation,
-            Tab::Config => Scope::Config,
+            Tab::Config => Scope::Config(self.config),
             Tab::Debug => Scope::Debug,
         }
     }
@@ -33,6 +34,7 @@ impl Default for Focus {
         Self {
             tab: Tab::Conversation,
             conversation: Conversation::History,
+            config: Config::Temperature,
         }
     }
 }
@@ -52,9 +54,42 @@ pub enum Conversation {
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
+pub enum Config {
+    MaxTokens,
+    Temperature,
+    TopP,
+    FrequencyPenalty,
+    PresencePenalty,
+}
+
+impl Config {
+    #[must_use]
+    pub fn next_cycle(&self) -> Config {
+        match self {
+            Config::MaxTokens => Config::Temperature,
+            Config::Temperature => Config::TopP,
+            Config::TopP => Config::FrequencyPenalty,
+            Config::FrequencyPenalty => Config::PresencePenalty,
+            Config::PresencePenalty => Config::MaxTokens,
+        }
+    }
+
+    #[must_use]
+    pub fn prev_cycle(&self) -> Config {
+        match self {
+            Config::MaxTokens => Config::PresencePenalty,
+            Config::Temperature => Config::MaxTokens,
+            Config::TopP => Config::Temperature,
+            Config::FrequencyPenalty => Config::TopP,
+            Config::PresencePenalty => Config::FrequencyPenalty,
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Scope {
     Conversation(Conversation),
     NewConversation,
-    Config,
+    Config(Config),
     Debug,
 }

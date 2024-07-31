@@ -1,6 +1,7 @@
 use anyhow::{Context, Result};
 use ratatui::prelude::Color;
 use serde::Deserialize;
+use std::ops::{Add, Sub};
 
 const CONFIG_TEMPLATE: &str = include_str!("../config.template.toml");
 
@@ -39,11 +40,33 @@ impl std::fmt::Display for ChatModel {
 #[derive(Debug, Deserialize, Clone)]
 pub struct Chat {
     pub model: ChatModel,
-    pub max_tokens: i16,
-    pub temperature: f32,
-    pub top_p: f32,
-    pub frequency_penalty: f32,
-    pub presence_penalty: f32,
+    pub max_tokens: ValueRange<u16>,
+    pub temperature: ValueRange<f32>,
+    pub top_p: ValueRange<f32>,
+    pub frequency_penalty: ValueRange<f32>,
+    pub presence_penalty: ValueRange<f32>,
+}
+
+#[derive(Debug, Deserialize, Copy, Clone)]
+pub struct ValueRange<T> {
+    pub value: T,
+    pub min: T,
+    pub max: T,
+    #[serde(alias = "step")]
+    pub increment_step: T,
+}
+
+impl<T> ValueRange<T>
+where
+    T: Copy + Add<Output = T> + Sub<Output = T> + PartialOrd,
+{
+    pub fn increment(&mut self) {
+        self.value = num_traits::clamp(self.value.add(self.increment_step), self.min, self.max);
+    }
+
+    pub fn decrement(&mut self) {
+        self.value = num_traits::clamp(self.value.sub(self.increment_step), self.min, self.max);
+    }
 }
 
 #[derive(Debug, Deserialize, Clone)]

@@ -1,5 +1,8 @@
-use crate::state::focus::{Conversation as ConversationFocus, Scope};
-use crate::state::State;
+use crate::config::ValueRange;
+use crate::state::{
+    focus::{Config as ConfigFocus, Conversation as ConversationFocus, Scope},
+    State,
+};
 use anyhow::{Context, Result};
 use ratatui::{
     layout::Margin,
@@ -58,7 +61,9 @@ pub fn draw_frame(frame: &mut Frame, state: &mut State) -> Result<()> {
                 .context("draw conversation tab")?;
         }
         Scope::NewConversation => new_conversation(frame, main_layout, state),
-        Scope::Config => draw_config(frame, main_layout, state),
+        Scope::Config(config_scope) => {
+            draw_config(frame, main_layout, state, config_scope).context("draw config")?;
+        }
         Scope::Debug => draw_debug(frame, main_layout, state),
     };
     Ok(())
@@ -191,16 +196,97 @@ fn new_conversation(frame: &mut Frame, rect: Rect, state: &mut State) {
     frame.render_stateful_widget(list, list_area, &mut list_state);
 }
 
-fn draw_config(frame: &mut Frame, rect: Rect, state: &mut State) {
+fn draw_config(
+    frame: &mut Frame,
+    rect: Rect,
+    state: &mut State,
+    config_scope: ConfigFocus,
+) -> Result<()> {
+    let layout = Layout::new(
+        Direction::Vertical,
+        [
+            Constraint::Length(1),
+            Constraint::Length(1),
+            Constraint::Length(1),
+            Constraint::Length(1),
+            Constraint::Length(1),
+            Constraint::Length(1),
+            Constraint::Length(1),
+        ],
+    )
+    .split(rect);
+    let mut areas_iter = layout.iter();
+
+    let config_style = Style::new()
+        .bg(state.config.ui.colors.config.background)
+        .fg(state.config.ui.colors.config.foreground);
+
     frame.render_widget(
         Paragraph::new(format!(
-            "Config file: {}\n{:#?}",
-            state.paths.config_file.display(),
-            state.config.chat
+            "Config file: {}",
+            state.paths.config_file.display()
         ))
-        .wrap(Wrap { trim: false })
-        .bg(state.config.ui.colors.config.background)
-        .fg(state.config.ui.colors.config.foreground),
+        .style(config_style.dim()),
+        *areas_iter.next().context("ui index")?,
+    );
+    frame.render_widget(
+        Paragraph::new(format!("Model: {}", state.config.chat.model)).style(config_style.dim()),
+        *areas_iter.next().context("ui index")?,
+    );
+
+    let area = *areas_iter.next().context("ui index")?;
+    draw_config_range(
+        frame,
+        area,
+        config_style,
+        &state.config.chat.max_tokens,
+        ConfigFocus::MaxTokens,
+        config_scope,
+    );
+    for (range_type, value_range) in [
+        (ConfigFocus::Temperature, state.config.chat.temperature),
+        (ConfigFocus::TopP, state.config.chat.top_p),
+        (
+            ConfigFocus::FrequencyPenalty,
+            state.config.chat.frequency_penalty,
+        ),
+        (
+            ConfigFocus::PresencePenalty,
+            state.config.chat.presence_penalty,
+        ),
+    ] {
+        let area = *areas_iter.next().context("ui index")?;
+        draw_config_range(
+            frame,
+            area,
+            config_style,
+            &value_range,
+            range_type,
+            config_scope,
+        );
+    }
+    Ok(())
+}
+
+fn draw_config_range<T: std::fmt::Debug + std::fmt::Display>(
+    frame: &mut Frame,
+    rect: Rect,
+    style: Style,
+    value_range: &ValueRange<T>,
+    value_range_type: ConfigFocus,
+    config_scope: ConfigFocus,
+) {
+    let style = if value_range_type == config_scope {
+        style
+    } else {
+        style.dim()
+    };
+    frame.render_widget(
+        Paragraph::new(format!(
+            "{:?}: {} ({} - {})",
+            value_range_type, value_range.value, value_range.min, value_range.max,
+        ))
+        .style(style),
         rect,
     );
 }

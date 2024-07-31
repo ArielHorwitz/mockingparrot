@@ -20,11 +20,11 @@ impl GptRequest {
         GptRequest {
             messages,
             model: config.model.to_string(),
-            max_tokens: config.max_tokens,
-            temperature: config.temperature,
-            top_p: config.top_p,
-            frequency_penalty: config.frequency_penalty,
-            presence_penalty: config.presence_penalty,
+            max_tokens: config.max_tokens.value.try_into().expect("max tokens"),
+            temperature: config.temperature.value,
+            top_p: config.top_p.value,
+            frequency_penalty: config.frequency_penalty.value,
+            presence_penalty: config.presence_penalty.value,
         }
     }
 }

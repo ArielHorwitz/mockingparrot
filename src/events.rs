@@ -1,6 +1,8 @@
 use crate::api::GptMessage;
 use crate::hotkeys::HotkeyAction;
-use crate::state::focus::{Conversation as ConversationFocus, Scope, Tab as TabFocus};
+use crate::state::focus::{
+    Config as ConfigFocus, Conversation as ConversationFocus, Scope, Tab as TabFocus,
+};
 use crate::state::{Conversation, State};
 use anyhow::{Context, Result};
 use crossterm::event::{self, Event, KeyEvent, KeyEventKind};
@@ -56,7 +58,9 @@ async fn handle_keys(key_event: KeyEvent, state: &mut State) -> Result<HandleEve
         (Scope::NewConversation, Some(hotkey_action)) => {
             handle_new_conversation(hotkey_action, state);
         }
-        (Scope::Config, Some(hotkey_action)) => handle_config(hotkey_action, state),
+        (Scope::Config(config_focus), Some(hotkey_action)) => {
+            handle_config(hotkey_action, config_focus, state);
+        }
         _ => (),
     }
     Ok(HandleEventResult::None)
@@ -162,27 +166,39 @@ fn handle_new_conversation(hotkey_action: HotkeyAction, state: &mut State) {
     }
 }
 
-fn handle_config(hotkey_action: HotkeyAction, state: &mut State) {
-    match hotkey_action {
-        HotkeyAction::IncrementTempurature => {
-            state.config.chat.temperature += 0.05;
+fn handle_config(hotkey_action: HotkeyAction, config_focus: ConfigFocus, state: &mut State) {
+    match (hotkey_action, config_focus) {
+        (HotkeyAction::SelectionUp, _) => {
+            state.ui.focus.config = state.ui.focus.config.prev_cycle();
         }
-        HotkeyAction::DecrementTempurature => {
-            state.config.chat.temperature -= 0.05;
+        (HotkeyAction::SelectionDown, _) => {
+            state.ui.focus.config = state.ui.focus.config.next_cycle();
         }
-        HotkeyAction::IncrementTopP => state.config.chat.top_p += 0.05,
-        HotkeyAction::DecrementTopP => state.config.chat.top_p -= 0.05,
-        HotkeyAction::IncrementFrequencyPenalty => {
-            state.config.chat.frequency_penalty += 0.05;
+        (HotkeyAction::Increment, ConfigFocus::MaxTokens) => {
+            state.config.chat.max_tokens.increment();
         }
-        HotkeyAction::DecrementFrequencyPenalty => {
-            state.config.chat.frequency_penalty -= 0.05;
+        (HotkeyAction::Increment, ConfigFocus::Temperature) => {
+            state.config.chat.temperature.increment();
         }
-        HotkeyAction::IncrementPresencePenalty => {
-            state.config.chat.presence_penalty += 0.05;
+        (HotkeyAction::Increment, ConfigFocus::TopP) => state.config.chat.top_p.increment(),
+        (HotkeyAction::Increment, ConfigFocus::FrequencyPenalty) => {
+            state.config.chat.frequency_penalty.increment();
         }
-        HotkeyAction::DecrementPresencePenalty => {
-            state.config.chat.presence_penalty -= 0.05;
+        (HotkeyAction::Increment, ConfigFocus::PresencePenalty) => {
+            state.config.chat.presence_penalty.increment();
+        }
+        (HotkeyAction::Decrement, ConfigFocus::MaxTokens) => {
+            state.config.chat.max_tokens.decrement();
+        }
+        (HotkeyAction::Decrement, ConfigFocus::Temperature) => {
+            state.config.chat.temperature.decrement();
+        }
+        (HotkeyAction::Decrement, ConfigFocus::TopP) => state.config.chat.top_p.decrement(),
+        (HotkeyAction::Decrement, ConfigFocus::FrequencyPenalty) => {
+            state.config.chat.frequency_penalty.decrement();
+        }
+        (HotkeyAction::Decrement, ConfigFocus::PresencePenalty) => {
+            state.config.chat.presence_penalty.decrement();
         }
         _ => (),
     };
