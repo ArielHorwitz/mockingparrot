@@ -77,7 +77,10 @@ fn draw_conversation(
 ) -> Result<()> {
     let layout = Layout::new(
         Direction::Vertical,
-        [Constraint::Fill(1), Constraint::Length(10)],
+        [
+            Constraint::Fill(1),
+            Constraint::Length(state.config.ui.layout.prompt_size.saturating_add(2).max(3)),
+        ],
     )
     .split(rect);
     let convo_layout = *layout.first().context("ui index")?;

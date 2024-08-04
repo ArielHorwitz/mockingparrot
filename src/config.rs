@@ -72,7 +72,13 @@ where
 #[derive(Debug, Deserialize, Clone)]
 pub struct Ui {
     pub editor_command: Vec<String>,
+    pub layout: Layout,
     pub colors: Colors,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct Layout {
+    pub prompt_size: u16,
 }
 
 #[derive(Debug, Deserialize, Clone)]
