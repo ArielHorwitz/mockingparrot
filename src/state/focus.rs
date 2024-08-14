@@ -34,7 +34,7 @@ impl Default for Focus {
         Self {
             tab: Tab::Conversation,
             conversation: Conversation::History,
-            config: Config::Temperature,
+            config: Config::MaxTokens,
         }
     }
 }
