@@ -36,13 +36,6 @@ pub struct HotkeyEvent {
     modifiers: KeyModifiers,
 }
 
-impl HotkeyEvent {
-    #[must_use]
-    pub fn to_key_event(self) -> KeyEvent {
-        KeyEvent::new(self.code, self.modifiers)
-    }
-}
-
 impl<'de> Deserialize<'de> for HotkeyEvent {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -155,7 +148,7 @@ pub fn get_hotkey_config(config_map: HotkeyConfig) -> HotkeyMap {
         let event_list: Vec<KeyEvent> = v
             .unwrap_or(Vec::new())
             .into_iter()
-            .map(HotkeyEvent::to_key_event)
+            .map(|ev| KeyEvent::new(ev.code, ev.modifiers))
             .collect();
         for e in event_list {
             map.insert(e, k);
