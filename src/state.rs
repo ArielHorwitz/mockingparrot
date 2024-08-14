@@ -48,7 +48,7 @@ impl State {
             conversation: Conversation::new(system_instructions),
             ui,
         };
-        state.add_debug_log("Start of debug logs");
+        state.add_debug_log("Initialized debug logs");
         Ok(state)
     }
 
