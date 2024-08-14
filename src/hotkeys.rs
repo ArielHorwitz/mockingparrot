@@ -38,11 +38,6 @@ pub struct HotkeyEvent {
 
 impl HotkeyEvent {
     #[must_use]
-    pub fn new(code: KeyCode, modifiers: KeyModifiers) -> Self {
-        Self { code, modifiers }
-    }
-
-    #[must_use]
     pub fn to_key_event(self) -> KeyEvent {
         KeyEvent::new(self.code, self.modifiers)
     }
