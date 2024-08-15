@@ -4,6 +4,7 @@ use crate::{
 };
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
+use std::io::Write;
 use std::path::PathBuf;
 use tui_textarea::TextArea;
 
@@ -23,6 +24,7 @@ impl State {
     pub fn new() -> Result<Self> {
         let paths = Paths::generate_dirs().context("generate directories")?;
         let config = get_config_from_file(&paths.config_file).context("get config from file")?;
+        let hotkey_map = crate::hotkeys::get_hotkey_config(config.hotkeys.clone());
         let system_instructions = config
             .system
             .instructions
@@ -30,8 +32,9 @@ impl State {
             .context("no system instructions")?
             .message
             .clone();
+        let mut conversations = Self::load_conversations_from_disk(&paths.conversations_file)?;
+        conversations.insert(0, Conversation::new(system_instructions));
 
-        let hotkey_map = crate::hotkeys::get_hotkey_config(config.hotkeys.clone());
         let ui = Ui {
             focus: Focus::default(),
             status_bar_text: format!("Config file: {}", paths.config_file.display()),
@@ -46,7 +49,7 @@ impl State {
             config,
             hotkey_map,
             paths,
-            conversations: vec![Conversation::new(system_instructions)],
+            conversations,
             ui,
         };
         state.add_debug_log("Initialized debug logs");
@@ -80,6 +83,28 @@ impl State {
             .debug_logs
             .push(format!("{} | {}", get_timestamp(), log.into()));
     }
+
+    pub fn save_conversations_to_disk(&self) -> Result<()> {
+        let data =
+            serde_json::to_string_pretty(&self.conversations).context("serialize conversations")?;
+        let save_file_path = self.paths.data_dir.join("conversations.json");
+        let mut file =
+            std::fs::File::create(save_file_path).context("create conversations file")?;
+        file.write_all(data.as_bytes())
+            .context("write conversations file")?;
+        Ok(())
+    }
+
+    pub fn load_conversations_from_disk(save_file_path: &PathBuf) -> Result<Vec<Conversation>> {
+        if save_file_path.is_file() {
+            let data =
+                std::fs::read_to_string(save_file_path).context("read conversations file")?;
+            let conversations = serde_json::from_str(&data).context("deserialize conversations")?;
+            Ok(conversations)
+        } else {
+            Ok(Vec::new())
+        }
+    }
 }
 
 pub struct Paths {
@@ -87,6 +112,7 @@ pub struct Paths {
     pub config_dir: PathBuf,
     pub config_file: PathBuf,
     pub message_file: PathBuf,
+    pub conversations_file: PathBuf,
 }
 
 impl Paths {
@@ -105,11 +131,13 @@ impl Paths {
         }
         let config_file = config_dir.join("config.toml");
         let message_file = data_dir.join("message_text");
+        let conversations_file = data_dir.join("conversations.json");
         Ok(Self {
             data_dir,
             config_dir,
             config_file,
             message_file,
+            conversations_file,
         })
     }
 }

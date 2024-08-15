@@ -90,6 +90,9 @@ async fn handle_conversation(
             state.get_active_conversation_mut()?.add_message(message);
             state.ui.focus.conversation = ConversationFocus::Messages;
             do_prompt(state).await?;
+            state
+                .save_conversations_to_disk()
+                .context("save conversations")?;
         }
         (_, Some(HotkeyAction::GetMessageFromEditor)) => {
             let initial_text = state.ui.prompt_textarea.lines().join("\n");
