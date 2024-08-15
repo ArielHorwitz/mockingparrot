@@ -46,6 +46,9 @@ async fn handle_keys(key_event: KeyEvent, state: &mut State) -> Result<HandleEve
         (_, Some(HotkeyAction::ViewConversationTab)) => {
             state.ui.focus.set_tab(TabFocus::Conversation);
         }
+        (_, Some(HotkeyAction::ViewConversationHistoryTab)) => {
+            state.ui.focus.set_tab(TabFocus::ConversationHistory);
+        }
         (_, Some(HotkeyAction::ViewConfigTab)) => state.ui.focus.set_tab(TabFocus::Config),
         (_, Some(HotkeyAction::ViewDebugTab)) => state.ui.focus.set_tab(TabFocus::Debug),
         (_, Some(HotkeyAction::CycleTab)) => state.ui.focus.cycle_tab(),
@@ -55,6 +58,9 @@ async fn handle_keys(key_event: KeyEvent, state: &mut State) -> Result<HandleEve
                 .await;
         }
         (Scope::Debug, Some(hotkey_action)) => handle_debug(hotkey_action, state),
+        (Scope::ConversationHistory, Some(hotkey_action)) => {
+            handle_conversation_history(hotkey_action, state);
+        }
         (Scope::NewConversation, Some(hotkey_action)) => {
             handle_new_conversation(hotkey_action, state);
         }
@@ -81,8 +87,8 @@ async fn handle_conversation(
                 return Ok(HandleEventResult::None);
             }
             let message = GptMessage::new_user_message(text);
-            state.conversation.add_message(message);
-            state.ui.focus.conversation = ConversationFocus::History;
+            state.get_active_conversation_mut()?.add_message(message);
+            state.ui.focus.conversation = ConversationFocus::Messages;
             do_prompt(state).await?;
         }
         (_, Some(HotkeyAction::GetMessageFromEditor)) => {
@@ -96,7 +102,7 @@ async fn handle_conversation(
         }
         // Prompt focus
         (ConversationFocus::Prompt, Some(HotkeyAction::Cancel)) => {
-            state.ui.focus.conversation = ConversationFocus::History;
+            state.ui.focus.conversation = ConversationFocus::Messages;
         }
         (ConversationFocus::Prompt, Some(HotkeyAction::Clear)) => {
             state.ui.prompt_textarea.select_all();
@@ -105,9 +111,9 @@ async fn handle_conversation(
         (ConversationFocus::Prompt, _) => {
             state.ui.prompt_textarea.input(key_event);
         }
-        // Conversation history focus
-        (ConversationFocus::History, Some(hotkey_action)) => {
-            handle_conversation_history(hotkey_action, state);
+        // Conversation messages focus
+        (ConversationFocus::Messages, Some(hotkey_action)) => {
+            handle_conversation_messages(hotkey_action, state);
         }
         _ => (),
     }
@@ -115,6 +121,35 @@ async fn handle_conversation(
 }
 
 fn handle_conversation_history(hotkey_action: HotkeyAction, state: &mut State) {
+    match hotkey_action {
+        HotkeyAction::Select => {
+            state.ui.focus.conversation = ConversationFocus::Prompt;
+            state.ui.focus.set_tab(TabFocus::Conversation);
+        }
+        HotkeyAction::SelectionUp => {
+            state.ui.active_conversation_index =
+                state.ui.active_conversation_index.saturating_sub(1);
+        }
+        HotkeyAction::SelectionDown => {
+            state.ui.active_conversation_index =
+                state.ui.active_conversation_index.saturating_add(1);
+        }
+        HotkeyAction::ScrollUp => {
+            state.ui.active_conversation_index =
+                state.ui.active_conversation_index.saturating_sub(10);
+        }
+        HotkeyAction::ScrollDown => {
+            state.ui.active_conversation_index =
+                state.ui.active_conversation_index.saturating_add(10);
+        }
+        HotkeyAction::New => {
+            state.ui.focus.set_tab(TabFocus::NewConversation);
+        }
+        _ => (),
+    };
+}
+
+fn handle_conversation_messages(hotkey_action: HotkeyAction, state: &mut State) {
     match hotkey_action {
         HotkeyAction::Select => {
             state.ui.focus.conversation = ConversationFocus::Prompt;
@@ -142,9 +177,18 @@ fn handle_new_conversation(hotkey_action: HotkeyAction, state: &mut State) {
                 .instructions
                 .get(state.ui.system_instruction_selection)
             {
-                state.conversation = Conversation::new(system_instructions.message.clone());
+                if state
+                    .conversations
+                    .first()
+                    .is_some_and(Conversation::is_empty)
+                {
+                    state.conversations.remove(0);
+                }
+                let new_conversation = Conversation::new(system_instructions.message.clone());
+                state.conversations.insert(0, new_conversation);
+                state.ui.active_conversation_index = 0;
+                state.ui.focus.set_tab(TabFocus::Conversation);
             };
-            state.ui.focus.set_tab(TabFocus::Conversation);
         }
         HotkeyAction::SelectionDown => {
             let new_selection = state.ui.system_instruction_selection.saturating_add(1);

@@ -10,6 +10,7 @@ impl Focus {
     pub fn get_scope(&self) -> Scope {
         match self.tab {
             Tab::Conversation => Scope::Conversation(self.conversation),
+            Tab::ConversationHistory => Scope::ConversationHistory,
             Tab::NewConversation => Scope::NewConversation,
             Tab::Config => Scope::Config(self.config),
             Tab::Debug => Scope::Debug,
@@ -22,7 +23,8 @@ impl Focus {
 
     pub fn cycle_tab(&mut self) {
         self.tab = match self.tab {
-            Tab::Conversation => Tab::Config,
+            Tab::Conversation => Tab::ConversationHistory,
+            Tab::ConversationHistory => Tab::Config,
             Tab::Config => Tab::Debug,
             Tab::Debug | Tab::NewConversation => Tab::Conversation,
         };
@@ -33,7 +35,7 @@ impl Default for Focus {
     fn default() -> Self {
         Self {
             tab: Tab::Conversation,
-            conversation: Conversation::History,
+            conversation: Conversation::Messages,
             config: Config::MaxTokens,
         }
     }
@@ -42,6 +44,7 @@ impl Default for Focus {
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Tab {
     Conversation,
+    ConversationHistory,
     NewConversation,
     Config,
     Debug,
@@ -49,7 +52,7 @@ pub enum Tab {
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Conversation {
-    History,
+    Messages,
     Prompt,
 }
 
@@ -89,6 +92,7 @@ impl Config {
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Scope {
     Conversation(Conversation),
+    ConversationHistory,
     NewConversation,
     Config(Config),
     Debug,

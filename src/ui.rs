@@ -1,7 +1,7 @@
 use crate::config::ValueRange;
 use crate::state::{
     focus::{Config as ConfigFocus, Conversation as ConversationFocus, Scope},
-    State,
+    Conversation, State,
 };
 use anyhow::{Context, Result};
 use ratatui::{
@@ -49,6 +49,7 @@ pub fn draw_frame(frame: &mut Frame, state: &mut State) -> Result<()> {
             draw_conversation(frame, main_layout, state, conversation_scope)
                 .context("draw conversation tab")?;
         }
+        Scope::ConversationHistory => draw_conversation_history(frame, main_layout, state),
         Scope::NewConversation => new_conversation(frame, main_layout, state),
         Scope::Config(config_scope) => {
             draw_config(frame, main_layout, state, config_scope).context("draw config")?;
@@ -56,6 +57,21 @@ pub fn draw_frame(frame: &mut Frame, state: &mut State) -> Result<()> {
         Scope::Debug => draw_debug(frame, main_layout, state),
     };
     Ok(())
+}
+
+fn draw_conversation_history(frame: &mut Frame, rect: Rect, state: &mut State) {
+    let list_items = state.conversations.iter().map(Conversation::preview);
+    let list = List::new(list_items).highlight_style(Color::LightGreen);
+    let mut list_state =
+        ListState::default().with_selected(Some(state.ui.active_conversation_index));
+    let block = Block::new()
+        .borders(Borders::ALL)
+        .border_style(Color::LightCyan)
+        .title("All conversations")
+        .title_style(Color::LightCyan);
+    let list_area = block.inner(rect);
+    frame.render_widget(block, rect);
+    frame.render_stateful_widget(list, list_area, &mut list_state);
 }
 
 fn draw_conversation(
@@ -77,7 +93,7 @@ fn draw_conversation(
 
     // Styles for focus
     let (convo_block_style, prompt_style, cursor_style) = match conversation_scope {
-        ConversationFocus::History => (
+        ConversationFocus::Messages => (
             Style::new().fg(state.config.ui.colors.conversation.foreground),
             Style::new()
                 .bg(state.config.ui.colors.prompt.background)
@@ -116,13 +132,13 @@ fn draw_conversation(
         ])
     } else {
         let mut lines = Vec::new();
-        for message in &state.conversation.messages {
+        for message in &state.get_active_conversation()?.messages {
             lines.push(Line::styled(
                 format!("{:?}:", message.role),
                 convo_name_style,
             ));
             for line in message.content.lines() {
-                lines.push(Line::styled(line, convo_text_style));
+                lines.push(Line::styled(line.to_owned(), convo_text_style));
             }
         }
         Text::from_iter(lines)

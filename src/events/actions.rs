@@ -31,7 +31,8 @@ pub fn get_message_text_from_editor(state: &State, initial_text: &str) -> Result
 
 pub async fn do_prompt(state: &mut State) -> Result<()> {
     let client = reqwest::Client::new();
-    let raw_response = get_completion(&client, &state.config, &state.conversation).await;
+    let raw_response =
+        get_completion(&client, &state.config, state.get_active_conversation()?).await;
     match raw_response {
         Ok(response) => {
             let message = &response
@@ -39,14 +40,16 @@ pub async fn do_prompt(state: &mut State) -> Result<()> {
                 .first()
                 .context("missing response choices")?
                 .message;
-            state.conversation.add_message(message.clone());
+            state
+                .get_active_conversation_mut()?
+                .add_message(message.clone());
             state.set_status_bar_text(format!("AI responded. {}", response.usage));
             state.add_debug_log(response.usage.to_string());
         }
         Err(error) => {
             state.set_status_bar_text(API_ERROR_FEEDBACK);
             state
-                .conversation
+                .get_active_conversation_mut()?
                 .add_message(GptMessage::new_system_message(
                     API_ERROR_SYSTEM_MESSAGE.to_owned(),
                 ));

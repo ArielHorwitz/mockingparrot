@@ -15,7 +15,7 @@ pub struct State {
     pub config: Config,
     pub hotkey_map: crate::hotkeys::HotkeyMap,
     pub paths: Paths,
-    pub conversation: Conversation,
+    pub conversations: Vec<Conversation>,
     pub ui: Ui,
 }
 
@@ -39,17 +39,36 @@ impl State {
             conversation_scroll: 0,
             debug_logs: Vec::new(),
             debug_logs_scroll: 0,
+            active_conversation_index: 0,
             system_instruction_selection: 0,
         };
         let mut state = Self {
             config,
             hotkey_map,
             paths,
-            conversation: Conversation::new(system_instructions),
+            conversations: vec![Conversation::new(system_instructions)],
             ui,
         };
         state.add_debug_log("Initialized debug logs");
         Ok(state)
+    }
+
+    pub fn fix_clamp_ui_selections(&mut self) {
+        if self.ui.active_conversation_index >= self.conversations.len() {
+            self.ui.active_conversation_index = self.conversations.len() - 1;
+        }
+    }
+
+    pub fn get_active_conversation(&self) -> Result<&Conversation> {
+        self.conversations
+            .get(self.ui.active_conversation_index)
+            .context("active conversation index out of bounds")
+    }
+
+    pub fn get_active_conversation_mut(&mut self) -> Result<&mut Conversation> {
+        self.conversations
+            .get_mut(self.ui.active_conversation_index)
+            .context("active conversation index out of bounds")
     }
 
     pub fn set_status_bar_text<T: Into<String>>(&mut self, text: T) {
@@ -102,6 +121,7 @@ pub struct Ui {
     pub conversation_scroll: u16,
     pub debug_logs: Vec<String>,
     pub debug_logs_scroll: u16,
+    pub active_conversation_index: usize,
     pub system_instruction_selection: usize,
 }
 
@@ -120,6 +140,33 @@ impl Conversation {
 
     pub fn add_message(&mut self, message: GptMessage) {
         self.messages.push(message);
+    }
+
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.messages.get(1).is_none()
+    }
+
+    #[must_use]
+    pub fn preview(&self) -> String {
+        if let Some(first_message) = self.messages.get(1) {
+            first_message
+                .content
+                .chars()
+                .take(200)
+                .map(|char| if char == '\n' { ' ' } else { char })
+                .collect()
+        } else if let Some(system_instructions) = self.messages.first() {
+            let content: String = system_instructions
+                .content
+                .chars()
+                .take(194)
+                .map(|char| if char == '\n' { ' ' } else { char })
+                .collect();
+            format!("<NEW> {content}")
+        } else {
+            "<EMPTY>".to_string()
+        }
     }
 }
 

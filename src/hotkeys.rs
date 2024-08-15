@@ -24,6 +24,7 @@ pub enum HotkeyAction {
     Decrement,
     CycleTab,
     ViewConversationTab,
+    ViewConversationHistoryTab,
     ViewConfigTab,
     ViewDebugTab,
     SendPrompt,
