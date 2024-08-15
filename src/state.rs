@@ -34,7 +34,7 @@ impl State {
         let hotkey_map = crate::hotkeys::get_hotkey_config(config.hotkeys.clone());
         let ui = Ui {
             focus: Focus::default(),
-            status_bar_text: format!("Welcome to {}", crate::APP_TITLE),
+            status_bar_text: format!("Config file: {}", paths.config_file.display()),
             prompt_textarea: TextArea::default(),
             conversation_scroll: 0,
             debug_logs: Vec::new(),

@@ -15,8 +15,6 @@ use ratatui::{
     Frame,
 };
 
-const STATUSBAR_HELP_TEXT: &str = "Ctrl+q - Quit, F1 - conversation, F2 - config, F3 - debug";
-
 pub fn draw_frame(frame: &mut Frame, state: &mut State) -> Result<()> {
     let layout = Layout::new(
         Direction::Vertical,
@@ -24,14 +22,12 @@ pub fn draw_frame(frame: &mut Frame, state: &mut State) -> Result<()> {
             Constraint::Length(1),
             Constraint::Fill(1),
             Constraint::Length(1),
-            Constraint::Length(1),
         ],
     )
     .split(frame.size());
     let title_layout = *layout.first().context("ui index")?;
     let main_layout = *layout.get(1).context("ui index")?;
     let status_bar_layout = *layout.get(2).context("ui index")?;
-    let help_bar_layout = *layout.get(3).context("ui index")?;
 
     // Title bar
     frame.render_widget(
@@ -40,18 +36,11 @@ pub fn draw_frame(frame: &mut Frame, state: &mut State) -> Result<()> {
     );
 
     // Status bar
-    let now = format!("{}", chrono::Local::now().format("%Y-%m-%d %H:%M:%S"));
     frame.render_widget(
         Paragraph::new(state.ui.status_bar_text.as_str())
             .bg(Color::DarkGray)
             .fg(Color::LightGreen),
         status_bar_layout,
-    );
-    frame.render_widget(
-        Paragraph::new(format!("{STATUSBAR_HELP_TEXT} | {now}"))
-            .bg(Color::Black)
-            .fg(Color::Green),
-        help_bar_layout,
     );
 
     // Main UI
