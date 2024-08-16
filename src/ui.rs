@@ -24,7 +24,7 @@ pub fn draw_frame(frame: &mut Frame, state: &mut State) -> Result<()> {
             Constraint::Length(1),
         ],
     )
-    .split(frame.size());
+    .split(frame.area());
     let title_layout = *layout.first().context("ui index")?;
     let main_layout = *layout.get(1).context("ui index")?;
     let status_bar_layout = *layout.get(2).context("ui index")?;
@@ -161,7 +161,7 @@ fn draw_conversation(
     let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight);
     let mut scrollbar_state =
         ScrollbarState::new(max_scroll as usize).position(state.ui.conversation_scroll as usize);
-    let scrollbar_area = convo_layout.inner(&ratatui::layout::Margin {
+    let scrollbar_area = convo_layout.inner(ratatui::layout::Margin {
         horizontal: 0,
         vertical: 1,
     });
@@ -315,7 +315,7 @@ fn draw_debug(frame: &mut Frame, rect: Rect, state: &mut State) {
     let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight);
     let mut scrollbar_state =
         ScrollbarState::new(max_scroll as usize).position(state.ui.debug_logs_scroll as usize);
-    let scrollbar_area = rect.inner(&Margin {
+    let scrollbar_area = rect.inner(Margin {
         horizontal: 1,
         vertical: 1,
     });
