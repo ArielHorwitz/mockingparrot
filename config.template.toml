@@ -11,9 +11,6 @@ top_p = { value = 1.0, min = 0.0, max = 1.0, step = 0.05 }
 frequency_penalty = { value = 0.0, min = -2.0, max = 2.0, step = 0.05 }
 presence_penalty = { value = 0.0, min = -2.0, max = 2.0, step = 0.05 }
 
-[ui]
-editor_command = ["gedit", "--standalone"]
-
 [ui.layout]
 prompt_size = 8
 
@@ -49,12 +46,17 @@ highlight = "#9CD6FF"
 title = "#9CD6FF"
 warn = "#D37C31"
 
+[commands]
+editor = ["gedit", "--standalone"]
+copy = ["xsel", "-ib"]
+
 [hotkeys]
 quit_program = [ "ctrl q" ]
 select = [ "enter" ]
 cancel = [ "esc" ]
 new = [ "ctrl n" ]
-clear = [ "ctrl c" ]
+clear = [ "ctrl delete" ]
+copy = [ "ctrl c" ]
 selection_up = [ "up" ]
 selection_down = [ "down" ]
 scroll_up = [ "pgup" ]

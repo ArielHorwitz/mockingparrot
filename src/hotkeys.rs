@@ -16,6 +16,7 @@ pub enum HotkeyAction {
     Cancel,
     New,
     Clear,
+    Copy,
     SelectionUp,
     SelectionDown,
     ScrollUp,

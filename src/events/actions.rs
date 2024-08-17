@@ -1,6 +1,7 @@
 use crate::api::{get_completion, GptMessage};
 use crate::state::State;
 use anyhow::{Context, Result};
+use std::io::Write;
 use std::process::Command;
 
 const API_ERROR_FEEDBACK: &str = "An error occured, see debug logs.";
@@ -9,7 +10,7 @@ const API_ERROR_SYSTEM_MESSAGE: &str = "Failed to get a response from the assist
 pub fn get_message_text_from_editor(state: &State, initial_text: &str) -> Result<String> {
     std::fs::write(&state.paths.message_file, initial_text)
         .context("write initial text to message file")?;
-    let mut editor_command_iter = state.config.ui.editor_command.iter();
+    let mut editor_command_iter = state.config.commands.editor.iter();
     let editor_process_output =
         Command::new(editor_command_iter.next().context("editor command empty")?)
             .args(editor_command_iter.collect::<Vec<&String>>())
@@ -56,5 +57,25 @@ pub async fn do_prompt(state: &mut State) -> Result<()> {
             state.add_debug_log(format!("{error}"));
         }
     }
+    Ok(())
+}
+
+pub fn export_to_clipboard(state: &State, text: &str) -> Result<()> {
+    let mut command_iter = state.config.commands.copy.iter();
+    let mut child_process = Command::new(command_iter.next().context("clipboard command empty")?)
+        .args(command_iter.collect::<Vec<&String>>())
+        .stdin(std::process::Stdio::piped())
+        .spawn()
+        .context("spawn clipboard command")?;
+    let child_stdin = child_process
+        .stdin
+        .as_mut()
+        .context("clipboard command stdin handle")?;
+    child_stdin
+        .write_all(text.as_bytes())
+        .context("write to clipboard command pipe")?;
+    child_process
+        .wait()
+        .context("wait on clipboard command process")?;
     Ok(())
 }

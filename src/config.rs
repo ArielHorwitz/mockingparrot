@@ -12,6 +12,7 @@ pub struct Config {
     pub api: Api,
     pub chat: Chat,
     pub ui: Ui,
+    pub commands: Commands,
     pub system: System,
     pub hotkeys: HotkeyConfig,
 }
@@ -71,7 +72,6 @@ where
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Ui {
-    pub editor_command: Vec<String>,
     pub layout: Layout,
     pub colors: Colors,
 }
@@ -117,6 +117,12 @@ impl ColorVariants {
             self.normal
         }
     }
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct Commands {
+    pub editor: Vec<String>,
+    pub copy: Vec<String>,
 }
 
 #[derive(Debug, Deserialize, Clone)]

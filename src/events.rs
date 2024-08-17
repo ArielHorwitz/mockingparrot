@@ -109,12 +109,25 @@ async fn handle_conversation(
             state.ui.prompt_textarea.select_all();
             state.ui.prompt_textarea.cut();
         }
+        (ConversationFocus::Prompt, Some(HotkeyAction::Copy)) => {
+            let last_message = state
+                .get_active_conversation()
+                .context("get active conversation")?
+                .messages
+                .last()
+                .context("get last message")?;
+            actions::export_to_clipboard(state, &last_message.content)
+                .context("export last message to clipboard")?;
+            state.add_debug_log("Copied last message to clipboard");
+            state.set_status_bar_text("Copied last message to clipboard");
+        }
         (ConversationFocus::Prompt, _) => {
             state.ui.prompt_textarea.input(key_event);
         }
         // Conversation messages focus
         (ConversationFocus::Messages, Some(hotkey_action)) => {
-            handle_conversation_messages(hotkey_action, state);
+            handle_conversation_messages(hotkey_action, state)
+                .context("handle conversation message")?;
         }
         _ => (),
     }
@@ -150,7 +163,7 @@ fn handle_conversation_history(hotkey_action: HotkeyAction, state: &mut State) {
     };
 }
 
-fn handle_conversation_messages(hotkey_action: HotkeyAction, state: &mut State) {
+fn handle_conversation_messages(hotkey_action: HotkeyAction, state: &mut State) -> Result<()> {
     match hotkey_action {
         HotkeyAction::Select => {
             state.ui.focus.conversation = ConversationFocus::Prompt;
@@ -164,8 +177,19 @@ fn handle_conversation_messages(hotkey_action: HotkeyAction, state: &mut State) 
         HotkeyAction::New => {
             state.ui.focus.set_tab(TabFocus::NewConversation);
         }
+        HotkeyAction::Copy => {
+            let text = state
+                .get_active_conversation()
+                .context("get active conversation")?
+                .to_string();
+            actions::export_to_clipboard(state, &text)
+                .context("export conversation to clipboard")?;
+            state.add_debug_log("Copied conversation to clipboard");
+            state.set_status_bar_text("Copied conversation to clipboard");
+        }
         _ => (),
     };
+    Ok(())
 }
 
 fn handle_new_conversation(hotkey_action: HotkeyAction, state: &mut State) {
