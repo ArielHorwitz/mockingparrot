@@ -1,6 +1,9 @@
 [package]
 name = "mockingparrot"
+description = "A TUI Chat Client for ChatGPT"
 version = "0.1.0"
+license = "Unlicense"
+repository = "https://github.com/ArielHorwitz/mockingparrot"
 edition = "2021"
 
 [dependencies]
