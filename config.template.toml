@@ -70,21 +70,21 @@ send_prompt = [ "alt enter" ]
 get_message_from_editor = [ "alt e" ]
 
 [[system.instructions]]
-name = "simple"
+name = "Quick"
 message = """
 You are a helpful assistant.
 Do not bother being polite. Your responses should be concise and terse.
 """
 
 [[system.instructions]]
-name = "detailed"
+name = "Detailed"
 message = """
 You are a helpful assistant.
 Do not bother being polite. Your responses should be detailed.
 """
 
 [[system.instructions]]
-name = "funny"
+name = "Funny"
 message = """
 You are a funny assistant.
 Do not bother being polite. Your responses should be funny.
