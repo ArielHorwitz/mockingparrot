@@ -9,8 +9,6 @@ use crossterm::event::{self, Event, KeyEvent, KeyEventKind};
 
 mod actions;
 
-use actions::{do_prompt, get_message_text_from_editor};
-
 pub enum HandleEventResult {
     None,
     Redraw,
@@ -89,14 +87,14 @@ async fn handle_conversation(
             let message = GptMessage::new_user_message(text);
             state.get_active_conversation_mut()?.add_message(message);
             state.ui.focus.conversation = ConversationFocus::Messages;
-            do_prompt(state).await?;
+            actions::do_prompt(state).await?;
             state
                 .save_conversations_to_disk()
                 .context("save conversations")?;
         }
         (_, Some(HotkeyAction::GetMessageFromEditor)) => {
             let initial_text = state.ui.prompt_textarea.lines().join("\n");
-            let message_text = get_message_text_from_editor(state, initial_text.as_str())
+            let message_text = actions::get_message_text_from_editor(state, initial_text.as_str())
                 .context("get message text from editor")?;
             state.ui.prompt_textarea.select_all();
             state.ui.prompt_textarea.cut();
