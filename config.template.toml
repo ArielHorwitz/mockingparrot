@@ -17,16 +17,37 @@ editor_command = ["gedit", "--standalone"]
 [ui.layout]
 prompt_size = 8
 
-[ui.colors]
-conversation.background = "#020414"
-conversation.foreground = "#33DD88"
-conversation_names = "#DD4400"
-prompt.background = "#110000"
-prompt.foreground = "#DDCC04"
-config.background = "#020414"
-config.foreground = "#FF5511"
-debug.background = "#020414"
-debug.foreground = "#5511FF"
+# Base palette: #1C1678 #8576FF #7BC9FF #A3FFD6 #D37C31
+[ui.colors.background]
+normal = "#04003C"
+inactive = "#04003C"
+highlight = "#2A21B4"
+title = "#04003C"
+warn = "#6A3100"
+[ui.colors.text]
+normal = "#7BC9FF"
+inactive = "#4D7E9F"
+highlight = "#11FF55"
+title = "#11FFBB"
+warn = "#D37C31"
+[ui.colors.frame]
+normal = "#8576FF"
+inactive = "#423B80"
+highlight = "#8576FF"
+title = "#A398FF"
+warn = "#D37C31"
+[ui.colors.widget]
+normal = "#7ABFA0"
+inactive = "#123313"
+highlight = "#7ABFA0"
+title = "#7ABFA0"
+warn = "#D37C31"
+[ui.colors.cursor]
+normal = "#9CD6FF"
+inactive = "#223333"
+highlight = "#9CD6FF"
+title = "#9CD6FF"
+warn = "#D37C31"
 
 [hotkeys]
 quit_program = [ "ctrl q" ]

@@ -83,17 +83,40 @@ pub struct Layout {
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Colors {
-    pub conversation: BgFgColors,
-    pub conversation_names: Color,
-    pub prompt: BgFgColors,
-    pub config: BgFgColors,
-    pub debug: BgFgColors,
+    pub text: ColorVariants,
+    pub background: ColorVariants,
+    pub frame: ColorVariants,
+    pub widget: ColorVariants,
+    pub cursor: ColorVariants,
 }
 
 #[derive(Debug, Deserialize, Clone)]
-pub struct BgFgColors {
-    pub background: Color,
-    pub foreground: Color,
+pub struct ColorVariants {
+    pub normal: Color,
+    pub inactive: Color,
+    pub highlight: Color,
+    pub title: Color,
+    pub warn: Color,
+}
+
+impl ColorVariants {
+    #[must_use]
+    pub fn get_active(&self, active: bool) -> Color {
+        if active {
+            self.normal
+        } else {
+            self.inactive
+        }
+    }
+
+    #[must_use]
+    pub fn get_highlight(&self, highlight: bool) -> Color {
+        if highlight {
+            self.highlight
+        } else {
+            self.normal
+        }
+    }
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -105,6 +128,17 @@ pub struct System {
 pub struct SystemInstructions {
     pub name: String,
     pub message: String,
+}
+
+impl SystemInstructions {
+    #[must_use]
+    pub fn preview(&self, length: usize) -> String {
+        self.message
+            .chars()
+            .take(length)
+            .map(|char| if char == '\n' { ' ' } else { char })
+            .collect()
+    }
 }
 
 pub fn get_config_from_file(config_file: &std::path::Path) -> Result<Config> {

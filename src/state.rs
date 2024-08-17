@@ -176,19 +176,19 @@ impl Conversation {
     }
 
     #[must_use]
-    pub fn preview(&self) -> String {
+    pub fn preview(&self, length: usize) -> String {
         if let Some(first_message) = self.messages.get(1) {
             first_message
                 .content
                 .chars()
-                .take(200)
+                .take(length)
                 .map(|char| if char == '\n' { ' ' } else { char })
                 .collect()
         } else if let Some(system_instructions) = self.messages.first() {
             let content: String = system_instructions
                 .content
                 .chars()
-                .take(194)
+                .take(length.saturating_sub(6))
                 .map(|char| if char == '\n' { ' ' } else { char })
                 .collect();
             format!("<NEW> {content}")

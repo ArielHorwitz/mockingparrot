@@ -1,13 +1,12 @@
 use crate::config::ValueRange;
 use crate::state::{
     focus::{Config as ConfigFocus, Conversation as ConversationFocus, Scope},
-    Conversation, State,
+    State,
 };
 use anyhow::{Context, Result};
 use ratatui::{
     layout::Margin,
     prelude::{Constraint, Direction, Layout, Line, Rect, Style, Stylize, Text},
-    style::Color,
     widgets::{
         Block, Borders, List, ListState, Paragraph, Scrollbar, ScrollbarOrientation,
         ScrollbarState, Wrap,
@@ -16,6 +15,10 @@ use ratatui::{
 };
 
 pub fn draw_frame(frame: &mut Frame, state: &mut State) -> Result<()> {
+    frame.render_widget(
+        Block::new().bg(state.config.ui.colors.background.normal),
+        frame.area(),
+    );
     let layout = Layout::new(
         Direction::Vertical,
         [
@@ -31,15 +34,19 @@ pub fn draw_frame(frame: &mut Frame, state: &mut State) -> Result<()> {
 
     // Title bar
     frame.render_widget(
-        Block::new().title(crate::APP_TITLE_FULL).fg(Color::Green),
+        Block::new()
+            .title(crate::APP_TITLE_FULL)
+            .title_alignment(ratatui::layout::Alignment::Center)
+            .fg(state.config.ui.colors.text.title)
+            .bold(),
         title_layout,
     );
 
     // Status bar
     frame.render_widget(
         Paragraph::new(state.ui.status_bar_text.as_str())
-            .bg(Color::DarkGray)
-            .fg(Color::LightGreen),
+            .bg(state.config.ui.colors.background.highlight)
+            .fg(state.config.ui.colors.text.normal),
         status_bar_layout,
     );
 
@@ -50,7 +57,7 @@ pub fn draw_frame(frame: &mut Frame, state: &mut State) -> Result<()> {
                 .context("draw conversation tab")?;
         }
         Scope::ConversationHistory => draw_conversation_history(frame, main_layout, state),
-        Scope::NewConversation => new_conversation(frame, main_layout, state),
+        Scope::NewConversation => draw_new_conversation(frame, main_layout, state),
         Scope::Config(config_scope) => {
             draw_config(frame, main_layout, state, config_scope).context("draw config")?;
         }
@@ -60,15 +67,20 @@ pub fn draw_frame(frame: &mut Frame, state: &mut State) -> Result<()> {
 }
 
 fn draw_conversation_history(frame: &mut Frame, rect: Rect, state: &mut State) {
-    let list_items = state.conversations.iter().map(Conversation::preview);
-    let list = List::new(list_items).highlight_style(Color::LightGreen);
+    let list_items = state
+        .conversations
+        .iter()
+        .map(|c| c.preview(rect.width.into()));
+    let list = List::new(list_items)
+        .style(state.config.ui.colors.text.normal)
+        .highlight_style(state.config.ui.colors.text.highlight);
     let mut list_state =
         ListState::default().with_selected(Some(state.ui.active_conversation_index));
     let block = Block::new()
         .borders(Borders::ALL)
-        .border_style(Color::LightCyan)
+        .border_style(state.config.ui.colors.frame.normal)
         .title("All conversations")
-        .title_style(Color::LightCyan);
+        .title_style(state.config.ui.colors.frame.title);
     let list_area = block.inner(rect);
     frame.render_widget(block, rect);
     frame.render_stateful_widget(list, list_area, &mut list_state);
@@ -90,75 +102,56 @@ fn draw_conversation(
     .split(rect);
     let convo_layout = *layout.first().context("ui index")?;
     let prompt_layout = *layout.get(1).context("ui index")?;
-
-    // Styles for focus
-    let (convo_block_style, prompt_style, cursor_style) = match conversation_scope {
-        ConversationFocus::Messages => (
-            Style::new().fg(state.config.ui.colors.conversation.foreground),
-            Style::new()
-                .bg(state.config.ui.colors.prompt.background)
-                .fg(state.config.ui.colors.prompt.foreground)
-                .dim(),
-            Style::new(),
-        ),
-        ConversationFocus::Prompt => (
-            Style::new()
-                .fg(state.config.ui.colors.conversation.foreground)
-                .dim(),
-            Style::new()
-                .bg(state.config.ui.colors.prompt.background)
-                .fg(state.config.ui.colors.prompt.foreground),
-            Style::new().bg(Color::Rgb(200, 200, 200)),
-        ),
-    };
+    draw_conversation_prompt(frame, prompt_layout, state, conversation_scope);
+    // Styles
+    let is_focused = conversation_scope == ConversationFocus::Messages;
+    let text_color = state.config.ui.colors.text.get_active(is_focused);
 
     // Conversation display
-    let convo_text_style = Style::new().fg(state.config.ui.colors.conversation.foreground);
-    let convo_name_style = Style::new()
-        .fg(state.config.ui.colors.conversation_names)
-        .bold();
+    let config_file_str = state.paths.config_file.to_string_lossy();
     let convo = if state.config.api.key.is_empty() {
         Text::from_iter([
-            Line::styled("Missing API key", Style::new().fg(Color::LightRed)),
+            "Missing API key"
+                .fg(state.config.ui.colors.text.warn)
+                .into(),
             Line::default(),
-            Line::styled(
-                "Enter your API key in your config file to start chatting:",
-                convo_text_style,
-            ),
-            Line::styled(
-                state.paths.config_file.to_string_lossy(),
-                Style::new().fg(Color::Yellow).bold(),
-            ),
+            "Enter your API key in your config file to start chatting:"
+                .fg(text_color)
+                .into(),
+            config_file_str
+                .fg(state.config.ui.colors.text.highlight)
+                .into(),
         ])
     } else {
-        let mut lines = Vec::new();
+        let mut lines: Vec<Line> = Vec::new();
         for message in &state.get_active_conversation()?.messages {
-            lines.push(Line::styled(
-                format!("{:?}:", message.role),
-                convo_name_style,
-            ));
+            lines.push(
+                format!("{:?}:", message.role)
+                    .fg(state.config.ui.colors.text.highlight)
+                    .into(),
+            );
             for line in message.content.lines() {
-                lines.push(Line::styled(line.to_owned(), convo_text_style));
+                lines.push(line.to_owned().fg(text_color).into());
             }
         }
         Text::from_iter(lines)
     };
 
-    let convo_block = Block::new()
+    let block = Block::new()
         .borders(Borders::ALL)
-        .style(convo_block_style)
+        .fg(state.config.ui.colors.frame.get_active(is_focused))
         .title("Conversation")
-        .title_style(convo_block_style);
+        .title_style(Style::new().fg(state.config.ui.colors.frame.title));
     let convo_text = Paragraph::new(convo)
         .wrap(Wrap { trim: false })
-        .bg(state.config.ui.colors.conversation.background)
         .scroll((state.ui.conversation_scroll, 0))
-        .block(convo_block);
+        .block(block);
 
     let line_count = convo_text.line_count(convo_layout.width - 2);
     let max_scroll = u16::try_from(line_count).unwrap_or(u16::MAX);
     state.ui.conversation_scroll = state.ui.conversation_scroll.min(max_scroll);
-    let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight);
+    let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
+        .style(Style::new().fg(state.config.ui.colors.widget.get_active(is_focused)));
     let mut scrollbar_state =
         ScrollbarState::new(max_scroll as usize).position(state.ui.conversation_scroll as usize);
     let scrollbar_area = convo_layout.inner(ratatui::layout::Margin {
@@ -168,40 +161,69 @@ fn draw_conversation(
 
     frame.render_widget(convo_text, convo_layout);
     frame.render_stateful_widget(scrollbar, scrollbar_area, &mut scrollbar_state);
-
-    // Prompt text input
-    state.ui.prompt_textarea.set_cursor_line_style(Style::new());
-    state.ui.prompt_textarea.set_cursor_style(cursor_style);
-    state.ui.prompt_textarea.set_style(prompt_style);
-    let prompt_block = Block::new()
-        .borders(Borders::ALL)
-        .style(prompt_style)
-        .title("Prompt")
-        .title_style(prompt_style);
-    let prompt_area = prompt_block.inner(prompt_layout);
-    frame.render_widget(prompt_block, prompt_layout);
-    frame.render_widget(state.ui.prompt_textarea.widget(), prompt_area);
     Ok(())
 }
 
-fn new_conversation(frame: &mut Frame, rect: Rect, state: &mut State) {
+fn draw_conversation_prompt(
+    frame: &mut Frame,
+    rect: Rect,
+    state: &mut State,
+    conversation_scope: ConversationFocus,
+) {
+    let is_focused = conversation_scope == ConversationFocus::Prompt;
+    let cursor_style = Style::new().bg(state.config.ui.colors.cursor.get_active(is_focused));
+    let text_style = Style::new().fg(state.config.ui.colors.text.get_active(is_focused));
+    let frame_style = Style::new().fg(state.config.ui.colors.frame.get_active(is_focused));
+    let frame_title_style = Style::new().fg(state.config.ui.colors.frame.title);
+
+    state.ui.prompt_textarea.set_cursor_line_style(Style::new());
+    state.ui.prompt_textarea.set_cursor_style(cursor_style);
+    state.ui.prompt_textarea.set_style(text_style);
+    let block = Block::new()
+        .borders(Borders::ALL)
+        .style(frame_style)
+        .title("Prompt")
+        .title_style(frame_title_style);
+    let inner = block.inner(rect);
+    frame.render_widget(block, rect);
+    frame.render_widget(state.ui.prompt_textarea.widget(), inner);
+}
+
+fn draw_new_conversation(frame: &mut Frame, rect: Rect, state: &mut State) {
     let list_items = state
         .config
         .system
         .instructions
         .iter()
-        .map(|i| format!(">> {}\n{}", i.name, i.message));
-    let list = List::new(list_items).highlight_style(Color::LightGreen);
-    let mut list_state =
-        ListState::default().with_selected(Some(state.ui.system_instruction_selection));
+        .enumerate()
+        .map(|(i, instruction)| {
+            let preview = instruction.preview(rect.width.into());
+            let (name_style, text_style) = if i == state.ui.system_instruction_selection {
+                (
+                    Style::new().fg(state.config.ui.colors.text.title).bold(),
+                    Style::new().fg(state.config.ui.colors.text.highlight),
+                )
+            } else {
+                (
+                    Style::new().fg(state.config.ui.colors.text.title),
+                    Style::new().fg(state.config.ui.colors.text.normal),
+                )
+            };
+            Line::from_iter([
+                ratatui::prelude::Span::styled(&instruction.name, name_style),
+                " | ".fg(state.config.ui.colors.text.normal),
+                ratatui::prelude::Span::styled(preview, text_style),
+            ])
+        });
+    let list = List::new(list_items);
     let block = Block::new()
         .borders(Borders::ALL)
-        .border_style(Color::LightCyan)
+        .border_style(state.config.ui.colors.frame.normal)
         .title("New conversation with system instructions:")
-        .title_style(Color::LightCyan);
+        .title_style(state.config.ui.colors.frame.title);
     let list_area = block.inner(rect);
     frame.render_widget(block, rect);
-    frame.render_stateful_widget(list, list_area, &mut list_state);
+    frame.render_widget(list, list_area);
 }
 
 fn draw_config(
@@ -210,6 +232,12 @@ fn draw_config(
     state: &mut State,
     config_scope: ConfigFocus,
 ) -> Result<()> {
+    let block = Block::new()
+        .borders(Borders::ALL)
+        .border_style(state.config.ui.colors.frame.normal)
+        .title("Configuration")
+        .title_style(state.config.ui.colors.frame.title);
+
     let layout = Layout::new(
         Direction::Vertical,
         [
@@ -222,31 +250,30 @@ fn draw_config(
             Constraint::Length(1),
         ],
     )
-    .split(rect);
+    .split(block.inner(rect));
     let mut areas_iter = layout.iter();
 
-    let config_style = Style::new()
-        .bg(state.config.ui.colors.config.background)
-        .fg(state.config.ui.colors.config.foreground);
+    let text_style = Style::new().fg(state.config.ui.colors.text.normal);
 
+    frame.render_widget(block, rect);
     frame.render_widget(
         Paragraph::new(format!(
             "Config file: {}",
             state.paths.config_file.display()
         ))
-        .style(config_style.dim()),
+        .style(text_style),
         *areas_iter.next().context("ui index")?,
     );
     frame.render_widget(
-        Paragraph::new(format!("Model: {}", state.config.chat.model)).style(config_style.dim()),
+        Paragraph::new(format!("Model: {}", state.config.chat.model)).style(text_style),
         *areas_iter.next().context("ui index")?,
     );
 
     let area = *areas_iter.next().context("ui index")?;
     draw_config_range(
         frame,
+        state,
         area,
-        config_style,
         &state.config.chat.max_tokens,
         ConfigFocus::MaxTokens,
         config_scope,
@@ -264,59 +291,50 @@ fn draw_config(
         ),
     ] {
         let area = *areas_iter.next().context("ui index")?;
-        draw_config_range(
-            frame,
-            area,
-            config_style,
-            &value_range,
-            range_type,
-            config_scope,
-        );
+        draw_config_range(frame, state, area, &value_range, range_type, config_scope);
     }
     Ok(())
 }
 
 fn draw_config_range<T: std::fmt::Debug + std::fmt::Display>(
     frame: &mut Frame,
+    state: &State,
     rect: Rect,
-    style: Style,
     value_range: &ValueRange<T>,
     value_range_type: ConfigFocus,
     config_scope: ConfigFocus,
 ) {
-    let style = if value_range_type == config_scope {
-        style
-    } else {
-        style.dim()
-    };
-    frame.render_widget(
-        Paragraph::new(format!(
-            "{:?}: {} ({} - {})",
-            value_range_type, value_range.value, value_range.min, value_range.max,
-        ))
-        .style(style),
-        rect,
+    let is_focused = value_range_type == config_scope;
+    let color = state.config.ui.colors.text.get_highlight(is_focused);
+    let text = format!(
+        "{:?}: {} ({} - {})",
+        value_range_type, value_range.value, value_range.min, value_range.max,
     );
+    frame.render_widget(Paragraph::new(text).fg(color), rect);
 }
 
 fn draw_debug(frame: &mut Frame, rect: Rect, state: &mut State) {
-    let debug_logs_block = Block::new().title("Debug logs").borders(Borders::ALL);
+    let debug_logs_block = Block::new()
+        .title("Debug logs")
+        .borders(Borders::ALL)
+        .fg(state.config.ui.colors.frame.normal)
+        .title_style(Style::new().fg(state.config.ui.colors.frame.title));
 
     let debug_text = Paragraph::new(state.ui.debug_logs.join("\n"))
         .wrap(Wrap { trim: false })
         .scroll((state.ui.debug_logs_scroll, 0))
-        .bg(state.config.ui.colors.debug.background)
-        .fg(state.config.ui.colors.debug.foreground)
+        .fg(state.config.ui.colors.text.normal)
         .block(debug_logs_block);
 
     let line_count = debug_text.line_count(rect.width - 2);
     let max_scroll = u16::try_from(line_count).unwrap_or(u16::MAX);
     state.ui.debug_logs_scroll = state.ui.debug_logs_scroll.min(max_scroll);
-    let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight);
+    let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
+        .style(Style::new().fg(state.config.ui.colors.widget.normal));
     let mut scrollbar_state =
         ScrollbarState::new(max_scroll as usize).position(state.ui.debug_logs_scroll as usize);
     let scrollbar_area = rect.inner(Margin {
-        horizontal: 1,
+        horizontal: 0,
         vertical: 1,
     });
 
