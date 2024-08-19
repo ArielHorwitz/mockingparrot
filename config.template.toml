@@ -69,7 +69,7 @@ view_conversation_history_tab = [ "f2" ]
 view_config_tab = [ "f8" ]
 view_debug_tab = [ "f9" ]
 send_prompt = [ "alt enter" ]
-get_message_from_editor = [ "alt e" ]
+editor = [ "alt e" ]
 
 [[system.instructions]]
 name = "Quick"

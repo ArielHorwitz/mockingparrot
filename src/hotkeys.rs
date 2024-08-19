@@ -29,7 +29,7 @@ pub enum HotkeyAction {
     ViewConfigTab,
     ViewDebugTab,
     SendPrompt,
-    GetMessageFromEditor,
+    Editor,
 }
 
 #[derive(Debug, Serialize, Hash, Clone, Copy, PartialEq, Eq)]

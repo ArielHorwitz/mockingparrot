@@ -92,7 +92,7 @@ async fn handle_conversation(
                 .save_conversations_to_disk()
                 .context("save conversations")?;
         }
-        (_, Some(HotkeyAction::GetMessageFromEditor)) => {
+        (_, Some(HotkeyAction::Editor)) => {
             let initial_text = state.ui.prompt_textarea.lines().join("\n");
             let message_text = actions::get_message_text_from_editor(state, initial_text.as_str())
                 .context("get message text from editor")?;
