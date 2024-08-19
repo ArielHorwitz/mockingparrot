@@ -63,7 +63,7 @@ async fn handle_keys(key_event: KeyEvent, state: &mut State) -> Result<HandleEve
             handle_new_conversation(hotkey_action, state);
         }
         (Scope::Config(config_focus), Some(hotkey_action)) => {
-            handle_config(hotkey_action, config_focus, state);
+            return handle_config(hotkey_action, config_focus, state);
         }
         _ => (),
     }
@@ -235,8 +235,20 @@ fn handle_new_conversation(hotkey_action: HotkeyAction, state: &mut State) {
     }
 }
 
-fn handle_config(hotkey_action: HotkeyAction, config_focus: ConfigFocus, state: &mut State) {
+fn handle_config(
+    hotkey_action: HotkeyAction,
+    config_focus: ConfigFocus,
+    state: &mut State,
+) -> Result<HandleEventResult> {
     match (hotkey_action, config_focus) {
+        (HotkeyAction::Editor, _) => {
+            actions::edit_config_file_in_editor(state)?;
+            state.reload_config()?;
+            return Ok(HandleEventResult::Redraw);
+        }
+        (HotkeyAction::Refresh, _) => {
+            state.reload_config()?;
+        }
         (HotkeyAction::SelectionUp, _) => {
             state.ui.focus.config = state.ui.focus.config.prev_cycle();
         }
@@ -271,6 +283,7 @@ fn handle_config(hotkey_action: HotkeyAction, config_focus: ConfigFocus, state: 
         }
         _ => (),
     };
+    Ok(HandleEventResult::None)
 }
 
 fn handle_debug(hotkey_action: HotkeyAction, state: &mut State) {

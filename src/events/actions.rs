@@ -30,6 +30,16 @@ pub fn get_message_text_from_editor(state: &State, initial_text: &str) -> Result
     Ok(message_text)
 }
 
+pub fn edit_config_file_in_editor(state: &State) -> Result<()> {
+    let mut editor_command_iter = state.config.commands.editor.iter();
+    Command::new(editor_command_iter.next().context("editor command empty")?)
+        .args(editor_command_iter.collect::<Vec<&String>>())
+        .arg(&state.paths.config_file)
+        .status()
+        .context("run editor")?;
+    Ok(())
+}
+
 pub async fn do_prompt(state: &mut State) -> Result<()> {
     let client = reqwest::Client::new();
     let raw_response =

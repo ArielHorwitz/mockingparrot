@@ -56,6 +56,18 @@ impl State {
         Ok(state)
     }
 
+    pub fn reload_config(&mut self) -> Result<()> {
+        self.config =
+            get_config_from_file(&self.paths.config_file).context("get config from file")?;
+        self.hotkey_map = crate::hotkeys::get_hotkey_config(self.config.hotkeys.clone());
+        self.set_status_bar_text(format!(
+            "Reloaded config file: {}",
+            self.paths.config_file.display()
+        ));
+        self.add_debug_log("Reloaded config file.");
+        Ok(())
+    }
+
     pub fn fix_clamp_ui_selections(&mut self) {
         if self.ui.active_conversation_index >= self.conversations.len() {
             self.ui.active_conversation_index = self.conversations.len() - 1;
