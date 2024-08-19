@@ -1,3 +1,5 @@
+const TAB_ORDER: [Tab; 3] = [Tab::Conversation, Tab::Config, Tab::Debug];
+
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Focus {
     pub tab: Tab,
@@ -10,8 +12,6 @@ impl Focus {
     pub fn get_scope(&self) -> Scope {
         match self.tab {
             Tab::Conversation => Scope::Conversation(self.conversation),
-            Tab::ConversationHistory => Scope::ConversationHistory,
-            Tab::NewConversation => Scope::NewConversation,
             Tab::Config => Scope::Config(self.config),
             Tab::Debug => Scope::Debug,
         }
@@ -21,13 +21,24 @@ impl Focus {
         self.tab = tab;
     }
 
-    pub fn cycle_tab(&mut self) {
-        self.tab = match self.tab {
-            Tab::Conversation => Tab::ConversationHistory,
-            Tab::ConversationHistory => Tab::Config,
-            Tab::Config => Tab::Debug,
-            Tab::Debug | Tab::NewConversation => Tab::Conversation,
-        };
+    #[allow(clippy::missing_panics_doc)]
+    pub fn cycle_tab_next(&mut self) {
+        let len = TAB_ORDER.len();
+        let pos = TAB_ORDER
+            .iter()
+            .position(|x| *x == self.tab)
+            .expect("missing in tab order");
+        self.tab = TAB_ORDER[(pos + 1) % len];
+    }
+
+    #[allow(clippy::missing_panics_doc)]
+    pub fn cycle_tab_prev(&mut self) {
+        let len = TAB_ORDER.len();
+        let pos = TAB_ORDER
+            .iter()
+            .position(|x| *x == self.tab)
+            .expect("missing in tab order");
+        self.tab = TAB_ORDER[(pos + len - 1) % len];
     }
 }
 
@@ -44,8 +55,6 @@ impl Default for Focus {
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Tab {
     Conversation,
-    ConversationHistory,
-    NewConversation,
     Config,
     Debug,
 }
@@ -54,6 +63,8 @@ pub enum Tab {
 pub enum Conversation {
     Messages,
     Prompt,
+    New,
+    History,
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -92,8 +103,6 @@ impl Config {
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Scope {
     Conversation(Conversation),
-    ConversationHistory,
-    NewConversation,
     Config(Config),
     Debug,
 }

@@ -44,27 +44,19 @@ async fn handle_keys(key_event: KeyEvent, state: &mut State) -> Result<HandleEve
         (_, Some(HotkeyAction::ViewConversationTab)) => {
             state.ui.focus.set_tab(TabFocus::Conversation);
         }
-        (_, Some(HotkeyAction::ViewConversationHistoryTab)) => {
-            state.ui.focus.set_tab(TabFocus::ConversationHistory);
-        }
         (_, Some(HotkeyAction::ViewConfigTab)) => state.ui.focus.set_tab(TabFocus::Config),
         (_, Some(HotkeyAction::ViewDebugTab)) => state.ui.focus.set_tab(TabFocus::Debug),
-        (_, Some(HotkeyAction::CycleTab)) => state.ui.focus.cycle_tab(),
+        (_, Some(HotkeyAction::CycleTab)) => state.ui.focus.cycle_tab_next(),
+        (_, Some(HotkeyAction::CycleBackTab)) => state.ui.focus.cycle_tab_prev(),
         // Scoped hotkeys
         (Scope::Conversation(conversation_focus), hotkey_action_option) => {
             return handle_conversation(hotkey_action_option, state, conversation_focus, key_event)
                 .await;
         }
-        (Scope::Debug, Some(hotkey_action)) => handle_debug(hotkey_action, state),
-        (Scope::ConversationHistory, Some(hotkey_action)) => {
-            handle_conversation_history(hotkey_action, state);
-        }
-        (Scope::NewConversation, Some(hotkey_action)) => {
-            handle_new_conversation(hotkey_action, state);
-        }
         (Scope::Config(config_focus), Some(hotkey_action)) => {
             return handle_config(hotkey_action, config_focus, state);
         }
+        (Scope::Debug, Some(hotkey_action)) => handle_debug(hotkey_action, state),
         _ => (),
     }
     Ok(HandleEventResult::None)
@@ -78,7 +70,7 @@ async fn handle_conversation(
 ) -> Result<HandleEventResult> {
     match (conversation_focus, hotkey_action_option) {
         // Focus-independent hotkeys
-        (_, Some(HotkeyAction::SendPrompt)) => {
+        (_, Some(HotkeyAction::Confirm)) => {
             let text = state.ui.prompt_textarea.lines().join("\n");
             if text.trim().is_empty() {
                 state.set_status_bar_text("Cannot send empty message.");
@@ -92,7 +84,7 @@ async fn handle_conversation(
                 .save_conversations_to_disk()
                 .context("save conversations")?;
         }
-        (_, Some(HotkeyAction::Editor)) => {
+        (_, Some(HotkeyAction::Edit)) => {
             let initial_text = state.ui.prompt_textarea.lines().join("\n");
             let message_text = actions::get_message_text_from_editor(state, initial_text.as_str())
                 .context("get message text from editor")?;
@@ -101,66 +93,33 @@ async fn handle_conversation(
             state.ui.prompt_textarea.insert_str(&message_text);
             return Ok(HandleEventResult::Redraw);
         }
-        // Prompt focus
-        (ConversationFocus::Prompt, Some(HotkeyAction::Cancel)) => {
-            state.ui.focus.conversation = ConversationFocus::Messages;
+        (_, Some(HotkeyAction::New)) => {
+            state.ui.focus.conversation = ConversationFocus::New;
         }
-        (ConversationFocus::Prompt, Some(HotkeyAction::Clear)) => {
-            state.ui.prompt_textarea.select_all();
-            state.ui.prompt_textarea.cut();
+        (_, Some(HotkeyAction::Open)) => {
+            state.ui.focus.conversation = ConversationFocus::History;
         }
-        (ConversationFocus::Prompt, Some(HotkeyAction::Copy)) => {
-            let last_message = state
-                .get_active_conversation()
-                .context("get active conversation")?
-                .messages
-                .last()
-                .context("get last message")?;
-            actions::export_to_clipboard(state, &last_message.content)
-                .context("export last message to clipboard")?;
-            state.add_debug_log("Copied last message to clipboard");
-            state.set_status_bar_text("Copied last message to clipboard");
+        // Scope-dependent hotkeys
+        (ConversationFocus::New, Some(hotkey_action)) => {
+            handle_conversation_new(hotkey_action, state);
         }
-        (ConversationFocus::Prompt, _) => {
-            state.ui.prompt_textarea.input(key_event);
+        (ConversationFocus::History, Some(hotkey_action)) => {
+            handle_conversation_history(hotkey_action, state);
         }
-        // Conversation messages focus
         (ConversationFocus::Messages, Some(hotkey_action)) => {
             handle_conversation_messages(hotkey_action, state)
                 .context("handle conversation message")?;
         }
+        (ConversationFocus::Prompt, Some(hotkey_action)) => {
+            handle_conversation_prompt(hotkey_action, state)
+                .context("handle conversation prompt")?;
+        }
+        (ConversationFocus::Prompt, _) => {
+            state.ui.prompt_textarea.input(key_event);
+        }
         _ => (),
     }
     Ok(HandleEventResult::None)
-}
-
-fn handle_conversation_history(hotkey_action: HotkeyAction, state: &mut State) {
-    match hotkey_action {
-        HotkeyAction::Select => {
-            state.ui.focus.conversation = ConversationFocus::Prompt;
-            state.ui.focus.set_tab(TabFocus::Conversation);
-        }
-        HotkeyAction::SelectionUp => {
-            state.ui.active_conversation_index =
-                state.ui.active_conversation_index.saturating_sub(1);
-        }
-        HotkeyAction::SelectionDown => {
-            state.ui.active_conversation_index =
-                state.ui.active_conversation_index.saturating_add(1);
-        }
-        HotkeyAction::ScrollUp => {
-            state.ui.active_conversation_index =
-                state.ui.active_conversation_index.saturating_sub(10);
-        }
-        HotkeyAction::ScrollDown => {
-            state.ui.active_conversation_index =
-                state.ui.active_conversation_index.saturating_add(10);
-        }
-        HotkeyAction::New => {
-            state.ui.focus.set_tab(TabFocus::NewConversation);
-        }
-        _ => (),
-    };
 }
 
 fn handle_conversation_messages(hotkey_action: HotkeyAction, state: &mut State) -> Result<()> {
@@ -168,14 +127,23 @@ fn handle_conversation_messages(hotkey_action: HotkeyAction, state: &mut State) 
         HotkeyAction::Select => {
             state.ui.focus.conversation = ConversationFocus::Prompt;
         }
-        HotkeyAction::ScrollUp => {
+        HotkeyAction::SelectionUp => {
             state.ui.conversation_scroll = state.ui.conversation_scroll.saturating_sub(1);
         }
-        HotkeyAction::ScrollDown => {
+        HotkeyAction::SelectionDown => {
             state.ui.conversation_scroll = state.ui.conversation_scroll.saturating_add(1);
         }
-        HotkeyAction::New => {
-            state.ui.focus.set_tab(TabFocus::NewConversation);
+        HotkeyAction::ScrollUp => {
+            state.ui.conversation_scroll = state.ui.conversation_scroll.saturating_sub(10);
+        }
+        HotkeyAction::ScrollDown => {
+            state.ui.conversation_scroll = state.ui.conversation_scroll.saturating_add(10);
+        }
+        HotkeyAction::SelectionStart => {
+            state.ui.conversation_scroll = 0;
+        }
+        HotkeyAction::SelectionEnd => {
+            state.ui.conversation_scroll = u16::MAX;
         }
         HotkeyAction::Copy => {
             let text = state
@@ -192,9 +160,36 @@ fn handle_conversation_messages(hotkey_action: HotkeyAction, state: &mut State) 
     Ok(())
 }
 
-fn handle_new_conversation(hotkey_action: HotkeyAction, state: &mut State) {
+fn handle_conversation_prompt(hotkey_action: HotkeyAction, state: &mut State) -> Result<()> {
     match hotkey_action {
-        HotkeyAction::Cancel => state.ui.focus.set_tab(TabFocus::Conversation),
+        HotkeyAction::Cancel => {
+            state.ui.focus.conversation = ConversationFocus::Messages;
+        }
+        HotkeyAction::Clear => {
+            state.ui.prompt_textarea.select_all();
+            state.ui.prompt_textarea.cut();
+        }
+        HotkeyAction::Copy => {
+            let last_message = state
+                .get_active_conversation()
+                .context("get active conversation")?
+                .messages
+                .last()
+                .context("get last message")?;
+            actions::export_to_clipboard(state, &last_message.content)
+                .context("export last message to clipboard")?;
+            state.add_debug_log("Copied last message to clipboard");
+            state.set_status_bar_text("Copied last message to clipboard");
+        }
+        _ => (),
+    }
+    Ok(())
+}
+
+fn handle_conversation_new(hotkey_action: HotkeyAction, state: &mut State) {
+    let max_selection = state.config.system.instructions.len().saturating_sub(1);
+    match hotkey_action {
+        HotkeyAction::Cancel => state.ui.focus.conversation = ConversationFocus::Messages,
         HotkeyAction::Select => {
             if let Some(system_instructions) = state
                 .config
@@ -212,27 +207,77 @@ fn handle_new_conversation(hotkey_action: HotkeyAction, state: &mut State) {
                 let new_conversation = Conversation::new(system_instructions.message.clone());
                 state.conversations.insert(0, new_conversation);
                 state.ui.active_conversation_index = 0;
-                state.ui.focus.set_tab(TabFocus::Conversation);
+                state.ui.focus.conversation = ConversationFocus::Prompt;
             };
         }
         HotkeyAction::SelectionDown => {
-            let new_selection = state.ui.system_instruction_selection.saturating_add(1);
-            if new_selection >= state.config.system.instructions.len() {
-                state.ui.system_instruction_selection = 0;
-            } else {
-                state.ui.system_instruction_selection = new_selection;
-            }
-        }
-        HotkeyAction::SelectionUp => {
-            let new_selection = state
+            state.ui.system_instruction_selection = state
                 .ui
                 .system_instruction_selection
-                .checked_sub(1)
-                .unwrap_or(state.config.system.instructions.len() - 1);
-            state.ui.system_instruction_selection = new_selection;
+                .saturating_add(1)
+                .min(max_selection);
+        }
+        HotkeyAction::SelectionUp => {
+            state.ui.system_instruction_selection =
+                state.ui.system_instruction_selection.saturating_sub(1);
+        }
+        HotkeyAction::ScrollDown => {
+            state.ui.system_instruction_selection = state
+                .ui
+                .system_instruction_selection
+                .saturating_add(10)
+                .min(max_selection);
+        }
+        HotkeyAction::ScrollUp => {
+            state.ui.system_instruction_selection =
+                state.ui.system_instruction_selection.saturating_sub(10);
+        }
+        HotkeyAction::SelectionStart => {
+            state.ui.system_instruction_selection = 0;
+        }
+        HotkeyAction::SelectionEnd => {
+            state.ui.system_instruction_selection = max_selection;
         }
         _ => (),
     }
+}
+
+fn handle_conversation_history(hotkey_action: HotkeyAction, state: &mut State) {
+    let max_selection = state.conversations.len().saturating_sub(1);
+    match hotkey_action {
+        HotkeyAction::Cancel | HotkeyAction::Select => {
+            state.ui.focus.conversation = ConversationFocus::Messages;
+        }
+        HotkeyAction::SelectionUp => {
+            state.ui.active_conversation_index =
+                state.ui.active_conversation_index.saturating_sub(1);
+        }
+        HotkeyAction::SelectionDown => {
+            state.ui.active_conversation_index = state
+                .ui
+                .active_conversation_index
+                .saturating_add(1)
+                .min(max_selection);
+        }
+        HotkeyAction::SelectionStart => {
+            state.ui.active_conversation_index = 0;
+        }
+        HotkeyAction::SelectionEnd => {
+            state.ui.active_conversation_index = max_selection;
+        }
+        HotkeyAction::ScrollUp => {
+            state.ui.active_conversation_index =
+                state.ui.active_conversation_index.saturating_sub(10);
+        }
+        HotkeyAction::ScrollDown => {
+            state.ui.active_conversation_index = state
+                .ui
+                .active_conversation_index
+                .saturating_add(10)
+                .min(max_selection);
+        }
+        _ => (),
+    };
 }
 
 fn handle_config(
@@ -241,14 +286,7 @@ fn handle_config(
     state: &mut State,
 ) -> Result<HandleEventResult> {
     match (hotkey_action, config_focus) {
-        (HotkeyAction::Editor, _) => {
-            actions::edit_config_file_in_editor(state)?;
-            state.reload_config()?;
-            return Ok(HandleEventResult::Redraw);
-        }
-        (HotkeyAction::Refresh, _) => {
-            state.reload_config()?;
-        }
+        (HotkeyAction::Cancel, _) => state.ui.focus.set_tab(TabFocus::Conversation),
         (HotkeyAction::SelectionUp, _) => {
             state.ui.focus.config = state.ui.focus.config.prev_cycle();
         }
@@ -281,6 +319,14 @@ fn handle_config(
         (HotkeyAction::Decrement, ConfigFocus::PresencePenalty) => {
             state.config.chat.presence_penalty.decrement();
         }
+        (HotkeyAction::Edit, _) => {
+            actions::edit_config_file_in_editor(state)?;
+            state.reload_config()?;
+            return Ok(HandleEventResult::Redraw);
+        }
+        (HotkeyAction::Refresh, _) => {
+            state.reload_config()?;
+        }
         _ => (),
     };
     Ok(HandleEventResult::None)
@@ -288,6 +334,7 @@ fn handle_config(
 
 fn handle_debug(hotkey_action: HotkeyAction, state: &mut State) {
     match hotkey_action {
+        HotkeyAction::Cancel => state.ui.focus.set_tab(TabFocus::Conversation),
         HotkeyAction::ScrollUp => {
             state.ui.debug_logs_scroll = state.ui.debug_logs_scroll.saturating_sub(1);
         }

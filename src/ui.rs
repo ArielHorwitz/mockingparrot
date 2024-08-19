@@ -52,38 +52,22 @@ pub fn draw_frame(frame: &mut Frame, state: &mut State) -> Result<()> {
 
     // Main UI
     match state.ui.focus.get_scope() {
+        Scope::Conversation(ConversationFocus::History) => {
+            draw_conversation_history(frame, main_layout, state);
+        }
+        Scope::Conversation(ConversationFocus::New) => {
+            draw_new_conversation(frame, main_layout, state);
+        }
         Scope::Conversation(conversation_scope) => {
             draw_conversation(frame, main_layout, state, conversation_scope)
                 .context("draw conversation tab")?;
         }
-        Scope::ConversationHistory => draw_conversation_history(frame, main_layout, state),
-        Scope::NewConversation => draw_new_conversation(frame, main_layout, state),
         Scope::Config(config_scope) => {
             draw_config(frame, main_layout, state, config_scope).context("draw config")?;
         }
         Scope::Debug => draw_debug(frame, main_layout, state),
     };
     Ok(())
-}
-
-fn draw_conversation_history(frame: &mut Frame, rect: Rect, state: &mut State) {
-    let list_items = state
-        .conversations
-        .iter()
-        .map(|c| c.preview(rect.width.into()));
-    let list = List::new(list_items)
-        .style(state.config.ui.colors.text.normal)
-        .highlight_style(state.config.ui.colors.text.highlight);
-    let mut list_state =
-        ListState::default().with_selected(Some(state.ui.active_conversation_index));
-    let block = Block::new()
-        .borders(Borders::ALL)
-        .border_style(state.config.ui.colors.frame.normal)
-        .title("All conversations")
-        .title_style(state.config.ui.colors.frame.title);
-    let list_area = block.inner(rect);
-    frame.render_widget(block, rect);
-    frame.render_stateful_widget(list, list_area, &mut list_state);
 }
 
 fn draw_conversation(
@@ -144,22 +128,26 @@ fn draw_conversation(
         .title_style(Style::new().fg(state.config.ui.colors.frame.title));
     let convo_text = Paragraph::new(convo)
         .wrap(Wrap { trim: false })
-        .scroll((state.ui.conversation_scroll, 0))
         .block(block);
 
-    let line_count = convo_text.line_count(convo_layout.width - 2);
-    let max_scroll = u16::try_from(line_count).unwrap_or(u16::MAX);
+    let line_count = convo_text.line_count(convo_layout.width.saturating_sub(2));
+    let max_scroll = u16::try_from(line_count)
+        .unwrap_or(u16::MAX)
+        .saturating_sub(3);
     state.ui.conversation_scroll = state.ui.conversation_scroll.min(max_scroll);
     let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
         .style(Style::new().fg(state.config.ui.colors.widget.get_active(is_focused)));
     let mut scrollbar_state =
-        ScrollbarState::new(max_scroll as usize).position(state.ui.conversation_scroll as usize);
+        ScrollbarState::new(max_scroll.into()).position(state.ui.conversation_scroll.into());
     let scrollbar_area = convo_layout.inner(ratatui::layout::Margin {
         horizontal: 0,
         vertical: 1,
     });
 
-    frame.render_widget(convo_text, convo_layout);
+    frame.render_widget(
+        convo_text.scroll((state.ui.conversation_scroll, 0)),
+        convo_layout,
+    );
     frame.render_stateful_widget(scrollbar, scrollbar_area, &mut scrollbar_state);
     Ok(())
 }
@@ -187,6 +175,26 @@ fn draw_conversation_prompt(
     let inner = block.inner(rect);
     frame.render_widget(block, rect);
     frame.render_widget(state.ui.prompt_textarea.widget(), inner);
+}
+
+fn draw_conversation_history(frame: &mut Frame, rect: Rect, state: &mut State) {
+    let list_items = state
+        .conversations
+        .iter()
+        .map(|c| c.preview(rect.width.into()));
+    let list = List::new(list_items)
+        .style(state.config.ui.colors.text.normal)
+        .highlight_style(state.config.ui.colors.text.highlight);
+    let mut list_state =
+        ListState::default().with_selected(Some(state.ui.active_conversation_index));
+    let block = Block::new()
+        .borders(Borders::ALL)
+        .border_style(state.config.ui.colors.frame.normal)
+        .title("Load conversation from history:")
+        .title_style(state.config.ui.colors.frame.title);
+    let list_area = block.inner(rect);
+    frame.render_widget(block, rect);
+    frame.render_stateful_widget(list, list_area, &mut list_state);
 }
 
 fn draw_new_conversation(frame: &mut Frame, rect: Rect, state: &mut State) {
@@ -221,7 +229,7 @@ fn draw_new_conversation(frame: &mut Frame, rect: Rect, state: &mut State) {
     let block = Block::new()
         .borders(Borders::ALL)
         .border_style(state.config.ui.colors.frame.normal)
-        .title("New conversation with system instructions:")
+        .title("Start new conversation:")
         .title_style(state.config.ui.colors.frame.title);
     let list_area = block.inner(rect);
     frame.render_widget(block, rect);
