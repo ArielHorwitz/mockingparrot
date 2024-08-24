@@ -110,12 +110,9 @@ async fn handle_conversation(
             handle_conversation_messages(hotkey_action, state)
                 .context("handle conversation message")?;
         }
-        (ConversationFocus::Prompt, Some(hotkey_action)) => {
-            handle_conversation_prompt(hotkey_action, state)
-                .context("handle conversation prompt")?;
-        }
         (ConversationFocus::Prompt, _) => {
-            state.ui.prompt_textarea.input(key_event);
+            handle_conversation_prompt(hotkey_action_option, key_event, state)
+                .context("handle conversation prompt")?;
         }
         _ => (),
     }
@@ -160,16 +157,20 @@ fn handle_conversation_messages(hotkey_action: HotkeyAction, state: &mut State) 
     Ok(())
 }
 
-fn handle_conversation_prompt(hotkey_action: HotkeyAction, state: &mut State) -> Result<()> {
-    match hotkey_action {
-        HotkeyAction::Cancel => {
+fn handle_conversation_prompt(
+    hotkey_action_option: Option<HotkeyAction>,
+    key_event: KeyEvent,
+    state: &mut State,
+) -> Result<()> {
+    match hotkey_action_option {
+        Some(HotkeyAction::Cancel) => {
             state.ui.focus.conversation = ConversationFocus::Messages;
         }
-        HotkeyAction::Clear => {
+        Some(HotkeyAction::Clear) => {
             state.ui.prompt_textarea.select_all();
             state.ui.prompt_textarea.cut();
         }
-        HotkeyAction::Copy => {
+        Some(HotkeyAction::Copy) => {
             let last_message = state
                 .get_active_conversation()
                 .context("get active conversation")?
@@ -181,7 +182,9 @@ fn handle_conversation_prompt(hotkey_action: HotkeyAction, state: &mut State) ->
             state.add_debug_log("Copied last message to clipboard");
             state.set_status_bar_text("Copied last message to clipboard");
         }
-        _ => (),
+        _ => {
+            state.ui.prompt_textarea.input(key_event);
+        }
     }
     Ok(())
 }
