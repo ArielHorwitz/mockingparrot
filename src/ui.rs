@@ -6,7 +6,7 @@ use crate::state::{
 use anyhow::{Context, Result};
 use ratatui::{
     layout::Margin,
-    prelude::{Constraint, Direction, Layout, Line, Rect, Style, Stylize, Text},
+    prelude::{Constraint, Direction, Layout, Line, Rect, Span, Style, Stylize, Text},
     widgets::{
         Block, Borders, List, ListState, Paragraph, Scrollbar, ScrollbarOrientation,
         ScrollbarState, Wrap,
@@ -242,12 +242,19 @@ fn draw_config(
     state: &mut State,
     config_scope: ConfigFocus,
 ) -> Result<()> {
-    let block = Block::new()
+    let outer_layout = Layout::new(
+        Direction::Vertical,
+        [Constraint::Min(9), Constraint::Fill(1)],
+    )
+    .split(rect);
+    let top_layout = outer_layout.first().context("ui index")?;
+    let bottom_layout = outer_layout.get(1).context("ui index")?;
+
+    let config_block = Block::new()
         .borders(Borders::ALL)
         .border_style(state.config.ui.colors.frame.normal)
         .title("Configuration")
         .title_style(state.config.ui.colors.frame.title);
-
     let layout = Layout::new(
         Direction::Vertical,
         [
@@ -260,12 +267,12 @@ fn draw_config(
             Constraint::Length(1),
         ],
     )
-    .split(block.inner(rect));
+    .split(config_block.inner(*top_layout));
     let mut areas_iter = layout.iter();
 
     let text_style = Style::new().fg(state.config.ui.colors.text.normal);
 
-    frame.render_widget(block, rect);
+    frame.render_widget(config_block, *top_layout);
     frame.render_widget(
         Paragraph::new(format!(
             "Config file: {}",
@@ -303,6 +310,23 @@ fn draw_config(
         let area = *areas_iter.next().context("ui index")?;
         draw_config_range(frame, state, area, &value_range, range_type, config_scope);
     }
+
+    let note_block = Block::new()
+        .borders(Borders::ALL)
+        .border_style(state.config.ui.colors.frame.normal)
+        .title("Note")
+        .title_style(state.config.ui.colors.frame.warn);
+    let note =
+        Line::from_iter([
+            Span::styled("It is generally recommend to alter ", state.config.ui.colors.text.normal),
+            Span::styled("top_p", state.config.ui.colors.text.highlight),
+            Span::styled(" or ", state.config.ui.colors.text.normal),
+            Span::styled("temperature", state.config.ui.colors.text.highlight),
+            Span::styled(", but not both.", state.config.ui.colors.text.normal),
+        ])
+        .fg(state.config.ui.colors.text.warn);
+    frame.render_widget(note, note_block.inner(*bottom_layout));
+    frame.render_widget(note_block, *bottom_layout);
     Ok(())
 }
 
