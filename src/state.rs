@@ -1,9 +1,8 @@
 use crate::{
-    api::GptMessage,
     config::{get_config_from_file, Config},
+    conversation::Conversation,
 };
 use anyhow::{Context, Result};
-use serde::{Deserialize, Serialize};
 use std::io::Write;
 use std::path::PathBuf;
 use tui_textarea::TextArea;
@@ -93,7 +92,7 @@ impl State {
     pub fn add_debug_log<T: Into<String>>(&mut self, log: T) {
         self.ui
             .debug_logs
-            .push(format!("{} | {}", get_timestamp(), log.into()));
+            .push(format!("{} | {}", crate::get_timestamp(), log.into()));
     }
 
     pub fn save_conversations_to_disk(&self) -> Result<()> {
@@ -163,62 +162,4 @@ pub struct Ui {
     pub debug_logs_scroll: u16,
     pub active_conversation_index: usize,
     pub system_instruction_selection: usize,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Conversation {
-    pub messages: Vec<GptMessage>,
-}
-
-impl Conversation {
-    #[must_use]
-    pub fn new(system_instructions: String) -> Self {
-        Self {
-            messages: vec![GptMessage::new_system_message(system_instructions)],
-        }
-    }
-
-    pub fn add_message(&mut self, message: GptMessage) {
-        self.messages.push(message);
-    }
-
-    #[must_use]
-    pub fn is_empty(&self) -> bool {
-        self.messages.get(1).is_none()
-    }
-
-    #[must_use]
-    pub fn preview(&self, length: usize) -> String {
-        if let Some(first_message) = self.messages.get(1) {
-            first_message
-                .content
-                .chars()
-                .take(length)
-                .map(|char| if char == '\n' { ' ' } else { char })
-                .collect()
-        } else if let Some(system_instructions) = self.messages.first() {
-            let content: String = system_instructions
-                .content
-                .chars()
-                .take(length.saturating_sub(6))
-                .map(|char| if char == '\n' { ' ' } else { char })
-                .collect();
-            format!("<NEW> {content}")
-        } else {
-            "<EMPTY>".to_string()
-        }
-    }
-}
-
-impl std::fmt::Display for Conversation {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for message in &self.messages {
-            writeln!(f, "{message}")?;
-        }
-        std::fmt::Result::Ok(())
-    }
-}
-
-fn get_timestamp() -> String {
-    format!("{}", chrono::Local::now().format("%Y-%m-%d %H:%M:%S%.3f"))
 }

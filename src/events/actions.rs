@@ -1,4 +1,5 @@
-use crate::api::{get_completion, GptMessage};
+use crate::api::get_completion;
+use crate::conversation::Message;
 use crate::state::State;
 use anyhow::{Context, Result};
 use std::io::Write;
@@ -53,7 +54,7 @@ pub async fn do_prompt(state: &mut State) -> Result<()> {
                 .message;
             state
                 .get_active_conversation_mut()?
-                .add_message(message.clone());
+                .add_message(message.into());
             state.set_status_bar_text(format!("AI responded. {}", response.usage));
             state.add_debug_log(response.usage.to_string());
         }
@@ -61,7 +62,7 @@ pub async fn do_prompt(state: &mut State) -> Result<()> {
             state.set_status_bar_text(API_ERROR_FEEDBACK);
             state
                 .get_active_conversation_mut()?
-                .add_message(GptMessage::new_system_message(
+                .add_message(Message::new_system_message(
                     API_ERROR_SYSTEM_MESSAGE.to_owned(),
                 ));
             state.add_debug_log(format!("{error}"));

@@ -1,5 +1,5 @@
 use crate::config::{Chat as ChatConfig, Config};
-use crate::state::Conversation;
+use crate::conversation::{Conversation, Message, Role};
 use anyhow::{Context, Result};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -29,14 +29,6 @@ impl GptRequest {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, Copy)]
-#[serde(rename_all = "snake_case")]
-pub enum Role {
-    User,
-    System,
-    Assistant,
-}
-
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct GptMessage {
     pub role: Role,
@@ -57,6 +49,24 @@ impl GptMessage {
         GptMessage {
             role: Role::System,
             content,
+        }
+    }
+}
+
+impl From<&Message> for GptMessage {
+    fn from(value: &Message) -> Self {
+        Self {
+            role: value.role,
+            content: value.content.clone(),
+        }
+    }
+}
+
+impl From<&GptMessage> for Message {
+    fn from(value: &GptMessage) -> Self {
+        Self {
+            role: value.role,
+            content: value.content.clone(),
         }
     }
 }
@@ -123,7 +133,14 @@ pub async fn get_completion(
     config: &Config,
     conversation: &Conversation,
 ) -> Result<GptResponse> {
-    let call_data = GptRequest::new(&config.chat, conversation.messages.clone());
+    let call_data = GptRequest::new(
+        &config.chat,
+        conversation
+            .messages
+            .iter()
+            .map(std::convert::Into::into)
+            .collect(),
+    );
     let raw_response = client
         .post("https://api.openai.com/v1/chat/completions")
         .bearer_auth(&config.api.key)

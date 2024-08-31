@@ -1,9 +1,10 @@
-use crate::api::GptMessage;
+use crate::conversation::Conversation;
+use crate::conversation::Message;
 use crate::hotkeys::HotkeyAction;
 use crate::state::focus::{
     Config as ConfigFocus, Conversation as ConversationFocus, Scope, Tab as TabFocus,
 };
-use crate::state::{Conversation, State};
+use crate::state::State;
 use anyhow::{Context, Result};
 use crossterm::event::{self, Event, KeyEvent, KeyEventKind};
 
@@ -76,7 +77,7 @@ async fn handle_conversation(
                 state.set_status_bar_text("Cannot send empty message.");
                 return Ok(HandleEventResult::None);
             }
-            let message = GptMessage::new_user_message(text);
+            let message = Message::new_user_message(text);
             state.get_active_conversation_mut()?.add_message(message);
             state.ui.focus.conversation = ConversationFocus::Messages;
             actions::do_prompt(state).await?;
