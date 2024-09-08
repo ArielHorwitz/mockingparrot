@@ -38,8 +38,8 @@ pub enum HotkeyAction {
 
 #[derive(Debug, Serialize, Hash, Clone, Copy, PartialEq, Eq)]
 pub struct HotkeyEvent {
-    code: KeyCode,
-    modifiers: KeyModifiers,
+    pub code: KeyCode,
+    pub modifiers: KeyModifiers,
 }
 
 impl<'de> Deserialize<'de> for HotkeyEvent {
