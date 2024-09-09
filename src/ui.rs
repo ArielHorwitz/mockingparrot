@@ -310,50 +310,7 @@ fn draw_config(
         let area = *areas_iter.next().context("ui index")?;
         draw_config_range(frame, state, area, &value_range, range_type, config_scope);
     }
-
-    let note_block = Block::new()
-        .borders(Borders::ALL)
-        .border_style(state.config.ui.colors.frame.normal)
-        .title("Note")
-        .title_style(state.config.ui.colors.frame.warn);
-    let edit_hotkey_repr = state
-        .config
-        .hotkeys
-        .get(&crate::hotkeys::HotkeyAction::Edit)
-        .and_then(|vec_opt| {
-            if let Some(v) = vec_opt {
-                return v
-                    .first()
-                    .map(|h| format!("{:?} + {:?}", h.modifiers, h.code));
-            };
-            None
-        })
-        .unwrap_or_else(|| "<NO HOTKEY SET>".to_string());
-    let note = Text::from_iter([
-        Line::from_iter([
-            Span::styled(
-                "It is generally recommend to alter ",
-                state.config.ui.colors.text.normal,
-            ),
-            Span::styled("top_p", state.config.ui.colors.text.highlight),
-            Span::styled(" or ", state.config.ui.colors.text.normal),
-            Span::styled("temperature", state.config.ui.colors.text.highlight),
-            Span::styled(", but not both.", state.config.ui.colors.text.normal),
-        ])
-        .fg(state.config.ui.colors.text.warn),
-        Line::default(),
-        Line::from_iter([
-            Span::styled(
-                "For a all settings, press: ",
-                state.config.ui.colors.text.normal,
-            ),
-            Span::styled(edit_hotkey_repr, state.config.ui.colors.text.highlight),
-            Span::styled(".", state.config.ui.colors.text.normal),
-        ])
-        .fg(state.config.ui.colors.text.warn),
-    ]);
-    frame.render_widget(note, note_block.inner(*bottom_layout));
-    frame.render_widget(note_block, *bottom_layout);
+    draw_config_note(frame, *bottom_layout, state);
     Ok(())
 }
 
@@ -401,4 +358,50 @@ fn draw_debug(frame: &mut Frame, rect: Rect, state: &mut State) {
 
     frame.render_widget(debug_text, rect);
     frame.render_stateful_widget(scrollbar, scrollbar_area, &mut scrollbar_state);
+}
+
+fn draw_config_note(frame: &mut Frame, rect: Rect, state: &State) {
+    let note_block = Block::new()
+        .borders(Borders::ALL)
+        .border_style(state.config.ui.colors.frame.normal)
+        .title("Note")
+        .title_style(state.config.ui.colors.frame.warn);
+    let edit_hotkey_repr = state
+        .config
+        .hotkeys
+        .get(&crate::hotkeys::HotkeyAction::Edit)
+        .and_then(|vec_opt| {
+            if let Some(v) = vec_opt {
+                return v
+                    .first()
+                    .map(|h| format!("{:?} + {:?}", h.modifiers, h.code));
+            };
+            None
+        })
+        .unwrap_or_else(|| "<NO HOTKEY SET>".to_string());
+    let note = Text::from_iter([
+        Line::from_iter([
+            Span::styled(
+                "It is generally recommend to alter ",
+                state.config.ui.colors.text.normal,
+            ),
+            Span::styled("top_p", state.config.ui.colors.text.highlight),
+            Span::styled(" or ", state.config.ui.colors.text.normal),
+            Span::styled("temperature", state.config.ui.colors.text.highlight),
+            Span::styled(", but not both.", state.config.ui.colors.text.normal),
+        ])
+        .fg(state.config.ui.colors.text.warn),
+        Line::default(),
+        Line::from_iter([
+            Span::styled(
+                "For a all settings, press: ",
+                state.config.ui.colors.text.normal,
+            ),
+            Span::styled(edit_hotkey_repr, state.config.ui.colors.text.highlight),
+            Span::styled(".", state.config.ui.colors.text.normal),
+        ])
+        .fg(state.config.ui.colors.text.warn),
+    ]);
+    frame.render_widget(note, note_block.inner(rect));
+    frame.render_widget(note_block, rect);
 }
