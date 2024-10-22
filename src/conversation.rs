@@ -1,11 +1,22 @@
 use serde::{Deserialize, Serialize};
+use crate::api::Provider;
 
 #[derive(Debug, Deserialize, Serialize, Clone, Copy)]
 #[serde(rename_all = "snake_case")]
 pub enum Role {
     User,
     System,
-    Assistant,
+    Assistant(Provider),
+}
+
+impl std::fmt::Display for Role {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Role::System => write!(f, "System"),
+            Role::Assistant(provider) => write!(f, "Assistant ({provider})"),
+            Role::User => write!(f, "User"),
+        }
+    }
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -34,7 +45,7 @@ impl Message {
 
 impl std::fmt::Display for Message {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}: {}", self.role, self.content)
+        write!(f, "{}: {}", self.role, self.content)
     }
 }
 

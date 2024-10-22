@@ -110,7 +110,7 @@ fn draw_conversation(
         let mut lines: Vec<Line> = Vec::new();
         for message in &state.get_active_conversation()?.messages {
             lines.push(
-                format!("{:?}:", message.role)
+                format!("{}:", message.role)
                     .fg(state.config.ui.colors.text.highlight)
                     .into(),
             );
