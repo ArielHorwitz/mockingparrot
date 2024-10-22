@@ -42,19 +42,16 @@ pub fn edit_config_file_in_editor(state: &State) -> Result<()> {
 }
 
 pub async fn do_prompt(state: &mut State) -> Result<()> {
-    let client = reqwest::Client::new();
-    let raw_response =
-        get_completion(&client, &state.config, state.get_active_conversation()?).await;
+    let raw_response = get_completion(
+        &state.config,
+        state.get_active_conversation()?,
+    )
+    .await;
     match raw_response {
         Ok(response) => {
-            let message = &response
-                .choices
-                .first()
-                .context("missing response choices")?
-                .message;
             state
                 .get_active_conversation_mut()?
-                .add_message(message.into());
+                .add_message(response.message);
             state.set_status_bar_text(format!("AI responded. {}", response.usage));
             state.add_debug_log(response.usage.to_string());
         }
@@ -65,7 +62,7 @@ pub async fn do_prompt(state: &mut State) -> Result<()> {
                 .add_message(Message::new_system_message(
                     API_ERROR_SYSTEM_MESSAGE.to_owned(),
                 ));
-            state.add_debug_log(format!("{error}"));
+            state.add_debug_log(format!("{error:?}"));
         }
     }
     Ok(())

@@ -1,9 +1,8 @@
-use crate::api::Provider;
+use crate::api::{CompletionResponse, Provider, TokenUsage};
 use crate::config::openai::Chat as ChatConfig;
 use crate::config::Config;
 use crate::conversation::{Conversation, Message, Role};
 use anyhow::{Context, Result};
-use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Debug)]
@@ -124,13 +123,13 @@ pub struct GptResponseUsage {
     pub total_tokens: u32,
 }
 
-impl std::fmt::Display for GptResponseUsage {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "Tokens: {} [{} prompt, {} completion]",
-            self.total_tokens, self.prompt_tokens, self.completion_tokens
-        )
+impl From<GptResponseUsage> for TokenUsage {
+    fn from(value: GptResponseUsage) -> Self {
+        TokenUsage {
+            prompt: value.prompt_tokens,
+            completion: value.completion_tokens,
+            total: value.total_tokens,
+        }
     }
 }
 
@@ -161,10 +160,10 @@ pub struct GptError {
 }
 
 pub async fn get_completion(
-    client: &Client,
     config: &Config,
     conversation: &Conversation,
-) -> Result<GptResponse> {
+) -> Result<CompletionResponse> {
+    let client = reqwest::Client::new();
     let call_data = GptRequest::new(
         &config.openai.chat,
         conversation
@@ -184,7 +183,18 @@ pub async fn get_completion(
         .await
         .context("parse api response as json")?;
     match serde_json::from_str::<GptResponse>(&raw_response) {
-        Ok(response) => Ok(response),
+        Ok(gpt_response) => {
+            let message = &gpt_response
+                .choices
+                .first()
+                .context("missing response choices")?
+                .message;
+            let response = CompletionResponse {
+                message: message.into(),
+                usage: gpt_response.usage.into(),
+            };
+            Ok(response)
+        }
         Err(response_parse_error) => match serde_json::from_str::<GptErrorContainer>(&raw_response)
         {
             Ok(error) => Err(anyhow::Error::msg(error.error.message.to_string())),

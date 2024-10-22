@@ -10,6 +10,7 @@ const CONFIG_TEMPLATE: &str = include_str!("../config.template.toml");
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Config {
+    pub provider: crate::api::Provider,
     pub openai: openai::OpenAi,
     pub ui: ui::Ui,
     pub commands: Commands,
