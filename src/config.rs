@@ -1,51 +1,20 @@
+use crate::hotkeys::HotkeyConfig;
 use anyhow::{Context, Result};
-use ratatui::prelude::Color;
 use serde::Deserialize;
 use std::ops::{Add, Sub};
 
-const CONFIG_TEMPLATE: &str = include_str!("../config.template.toml");
+pub mod openai;
+mod ui;
 
-use crate::hotkeys::HotkeyConfig;
+const CONFIG_TEMPLATE: &str = include_str!("../config.template.toml");
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Config {
-    pub api: Api,
-    pub chat: Chat,
-    pub ui: Ui,
+    pub openai: openai::OpenAi,
+    pub ui: ui::Ui,
     pub commands: Commands,
     pub system: System,
     pub hotkeys: HotkeyConfig,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-pub struct Api {
-    pub key: String,
-}
-
-#[allow(non_camel_case_types)]
-#[derive(Debug, Deserialize, Clone, Copy)]
-pub enum ChatModel {
-    #[serde(rename = "gpt-4o")]
-    Gpt_4o,
-}
-
-impl std::fmt::Display for ChatModel {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let name = match self {
-            ChatModel::Gpt_4o => "gpt-4o",
-        };
-        write!(f, "{name}")
-    }
-}
-
-#[derive(Debug, Deserialize, Clone)]
-pub struct Chat {
-    pub model: ChatModel,
-    pub max_tokens: ValueRange<u16>,
-    pub temperature: ValueRange<f32>,
-    pub top_p: ValueRange<f32>,
-    pub frequency_penalty: ValueRange<f32>,
-    pub presence_penalty: ValueRange<f32>,
 }
 
 #[derive(Debug, Deserialize, Copy, Clone)]
@@ -67,55 +36,6 @@ where
 
     pub fn decrement(&mut self) {
         self.value = num_traits::clamp(self.value.sub(self.increment_step), self.min, self.max);
-    }
-}
-
-#[derive(Debug, Deserialize, Clone)]
-pub struct Ui {
-    pub layout: Layout,
-    pub colors: Colors,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-pub struct Layout {
-    pub prompt_size: u16,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-pub struct Colors {
-    pub text: ColorVariants,
-    pub background: ColorVariants,
-    pub frame: ColorVariants,
-    pub widget: ColorVariants,
-    pub cursor: ColorVariants,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-pub struct ColorVariants {
-    pub normal: Color,
-    pub inactive: Color,
-    pub highlight: Color,
-    pub title: Color,
-    pub warn: Color,
-}
-
-impl ColorVariants {
-    #[must_use]
-    pub fn get_active(&self, active: bool) -> Color {
-        if active {
-            self.normal
-        } else {
-            self.inactive
-        }
-    }
-
-    #[must_use]
-    pub fn get_highlight(&self, highlight: bool) -> Color {
-        if highlight {
-            self.highlight
-        } else {
-            self.normal
-        }
     }
 }
 

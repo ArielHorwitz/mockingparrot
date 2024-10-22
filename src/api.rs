@@ -1,4 +1,5 @@
-use crate::config::{Chat as ChatConfig, Config};
+use crate::config::openai::Chat as ChatConfig;
+use crate::config::Config;
 use crate::conversation::{Conversation, Message, Role};
 use anyhow::{Context, Result};
 use reqwest::Client;
@@ -134,7 +135,7 @@ pub async fn get_completion(
     conversation: &Conversation,
 ) -> Result<GptResponse> {
     let call_data = GptRequest::new(
-        &config.chat,
+        &config.openai.chat,
         conversation
             .messages
             .iter()
@@ -143,7 +144,7 @@ pub async fn get_completion(
     );
     let raw_response = client
         .post("https://api.openai.com/v1/chat/completions")
-        .bearer_auth(&config.api.key)
+        .bearer_auth(&config.openai.key)
         .json(&call_data)
         .send()
         .await

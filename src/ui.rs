@@ -93,7 +93,7 @@ fn draw_conversation(
 
     // Conversation display
     let config_file_str = state.paths.config_file.to_string_lossy();
-    let convo = if state.config.api.key.is_empty() {
+    let convo = if state.config.openai.key.is_empty() {
         Text::from_iter([
             "Missing API key"
                 .fg(state.config.ui.colors.text.warn)
@@ -282,7 +282,7 @@ fn draw_config(
         *areas_iter.next().context("ui index")?,
     );
     frame.render_widget(
-        Paragraph::new(format!("Model: {}", state.config.chat.model)).style(text_style),
+        Paragraph::new(format!("Model: {}", state.config.openai.chat.model)).style(text_style),
         *areas_iter.next().context("ui index")?,
     );
 
@@ -291,20 +291,23 @@ fn draw_config(
         frame,
         state,
         area,
-        &state.config.chat.max_tokens,
+        &state.config.openai.chat.max_tokens,
         ConfigFocus::MaxTokens,
         config_scope,
     );
     for (range_type, value_range) in [
-        (ConfigFocus::Temperature, state.config.chat.temperature),
-        (ConfigFocus::TopP, state.config.chat.top_p),
+        (
+            ConfigFocus::Temperature,
+            state.config.openai.chat.temperature,
+        ),
+        (ConfigFocus::TopP, state.config.openai.chat.top_p),
         (
             ConfigFocus::FrequencyPenalty,
-            state.config.chat.frequency_penalty,
+            state.config.openai.chat.frequency_penalty,
         ),
         (
             ConfigFocus::PresencePenalty,
-            state.config.chat.presence_penalty,
+            state.config.openai.chat.presence_penalty,
         ),
     ] {
         let area = *areas_iter.next().context("ui index")?;

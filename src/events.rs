@@ -298,30 +298,30 @@ fn handle_config(
             state.ui.focus.config = state.ui.focus.config.next_cycle();
         }
         (HotkeyAction::Increment, ConfigFocus::MaxTokens) => {
-            state.config.chat.max_tokens.increment();
+            state.config.openai.chat.max_tokens.increment();
         }
         (HotkeyAction::Increment, ConfigFocus::Temperature) => {
-            state.config.chat.temperature.increment();
+            state.config.openai.chat.temperature.increment();
         }
-        (HotkeyAction::Increment, ConfigFocus::TopP) => state.config.chat.top_p.increment(),
+        (HotkeyAction::Increment, ConfigFocus::TopP) => state.config.openai.chat.top_p.increment(),
         (HotkeyAction::Increment, ConfigFocus::FrequencyPenalty) => {
-            state.config.chat.frequency_penalty.increment();
+            state.config.openai.chat.frequency_penalty.increment();
         }
         (HotkeyAction::Increment, ConfigFocus::PresencePenalty) => {
-            state.config.chat.presence_penalty.increment();
+            state.config.openai.chat.presence_penalty.increment();
         }
         (HotkeyAction::Decrement, ConfigFocus::MaxTokens) => {
-            state.config.chat.max_tokens.decrement();
+            state.config.openai.chat.max_tokens.decrement();
         }
         (HotkeyAction::Decrement, ConfigFocus::Temperature) => {
-            state.config.chat.temperature.decrement();
+            state.config.openai.chat.temperature.decrement();
         }
-        (HotkeyAction::Decrement, ConfigFocus::TopP) => state.config.chat.top_p.decrement(),
+        (HotkeyAction::Decrement, ConfigFocus::TopP) => state.config.openai.chat.top_p.decrement(),
         (HotkeyAction::Decrement, ConfigFocus::FrequencyPenalty) => {
-            state.config.chat.frequency_penalty.decrement();
+            state.config.openai.chat.frequency_penalty.decrement();
         }
         (HotkeyAction::Decrement, ConfigFocus::PresencePenalty) => {
-            state.config.chat.presence_penalty.decrement();
+            state.config.openai.chat.presence_penalty.decrement();
         }
         (HotkeyAction::Edit, _) => {
             actions::edit_config_file_in_editor(state)?;
