@@ -3,6 +3,7 @@ use crate::conversation::{Conversation, Message};
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
+mod anthropic;
 mod openai;
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
@@ -50,6 +51,8 @@ pub async fn get_completion(
         Provider::OpenAi => openai::get_completion(config, conversation)
             .await
             .context("get openai completion"),
-        Provider::Anthropic => unimplemented!("anthropic not implemented yet"),
+        Provider::Anthropic => anthropic::get_completion(config, conversation)
+            .await
+            .context("get anthropic completion"),
     }
 }

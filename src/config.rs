@@ -3,6 +3,7 @@ use anyhow::{Context, Result};
 use serde::Deserialize;
 use std::ops::{Add, Sub};
 
+pub mod anthropic;
 pub mod openai;
 mod ui;
 
@@ -12,6 +13,7 @@ const CONFIG_TEMPLATE: &str = include_str!("../config.template.toml");
 pub struct Config {
     pub provider: crate::api::Provider,
     pub openai: openai::OpenAi,
+    pub anthropic: anthropic::Anthropic,
     pub ui: ui::Ui,
     pub commands: Commands,
     pub system: System,
