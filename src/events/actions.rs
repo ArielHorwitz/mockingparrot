@@ -1,12 +1,10 @@
 use crate::api::get_completion;
-use crate::conversation::Message;
 use crate::state::State;
 use anyhow::{Context, Result};
 use std::io::Write;
 use std::process::Command;
 
 const API_ERROR_FEEDBACK: &str = "An error occured, see debug logs.";
-const API_ERROR_SYSTEM_MESSAGE: &str = "Failed to get a response from the assistant.";
 
 pub fn get_message_text_from_editor(state: &State, initial_text: &str) -> Result<String> {
     std::fs::write(&state.paths.message_file, initial_text)
@@ -42,11 +40,7 @@ pub fn edit_config_file_in_editor(state: &State) -> Result<()> {
 }
 
 pub async fn do_prompt(state: &mut State) -> Result<()> {
-    let raw_response = get_completion(
-        &state.config,
-        state.get_active_conversation()?,
-    )
-    .await;
+    let raw_response = get_completion(&state.config, state.get_active_conversation()?).await;
     match raw_response {
         Ok(response) => {
             state
@@ -57,11 +51,6 @@ pub async fn do_prompt(state: &mut State) -> Result<()> {
         }
         Err(error) => {
             state.set_status_bar_text(API_ERROR_FEEDBACK);
-            state
-                .get_active_conversation_mut()?
-                .add_message(Message::new_system_message(
-                    API_ERROR_SYSTEM_MESSAGE.to_owned(),
-                ));
             state.add_debug_log(format!("{error:?}"));
         }
     }

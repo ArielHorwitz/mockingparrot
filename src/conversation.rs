@@ -5,14 +5,12 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "snake_case")]
 pub enum Role {
     User,
-    System,
     Assistant(Provider),
 }
 
 impl std::fmt::Display for Role {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Role::System => write!(f, "System"),
             Role::Assistant(provider) => write!(f, "Assistant ({provider})"),
             Role::User => write!(f, "User"),
         }
@@ -33,14 +31,6 @@ impl Message {
             content,
         }
     }
-
-    #[must_use]
-    pub fn new_system_message(content: String) -> Self {
-        Self {
-            role: Role::System,
-            content,
-        }
-    }
 }
 
 impl std::fmt::Display for Message {
@@ -51,6 +41,7 @@ impl std::fmt::Display for Message {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Conversation {
+    pub system_instructions: String,
     pub messages: Vec<Message>,
 }
 
@@ -58,7 +49,8 @@ impl Conversation {
     #[must_use]
     pub fn new(system_instructions: String) -> Self {
         Self {
-            messages: vec![Message::new_system_message(system_instructions)],
+            system_instructions,
+            messages: Vec::new(),
         }
     }
 
@@ -68,7 +60,7 @@ impl Conversation {
 
     #[must_use]
     pub fn is_empty(&self) -> bool {
-        self.messages.get(1).is_none()
+        self.messages.is_empty()
     }
 
     #[must_use]
@@ -80,14 +72,6 @@ impl Conversation {
                 .take(length)
                 .map(|char| if char == '\n' { ' ' } else { char })
                 .collect()
-        } else if let Some(system_instructions) = self.messages.first() {
-            let content: String = system_instructions
-                .content
-                .chars()
-                .take(length.saturating_sub(6))
-                .map(|char| if char == '\n' { ' ' } else { char })
-                .collect();
-            format!("<NEW> {content}")
         } else {
             "<EMPTY>".to_string()
         }

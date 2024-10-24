@@ -1,13 +1,13 @@
 use crate::api::{CompletionResponse, Provider, TokenUsage};
 use crate::config::openai::Chat as ChatConfig;
 use crate::config::Config;
-use crate::conversation::{Conversation, Message, Role};
+use crate::conversation::{Conversation, Message as GenericMessage, Role as GenericRole};
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Debug)]
-struct GptRequest {
-    messages: Vec<GptMessage>,
+struct Request {
+    messages: Vec<Message>,
     model: String,
     top_p: f32,
     max_tokens: i16,
@@ -16,9 +16,9 @@ struct GptRequest {
     presence_penalty: f32,
 }
 
-impl GptRequest {
-    fn new(config: &ChatConfig, messages: Vec<GptMessage>) -> Self {
-        GptRequest {
+impl Request {
+    fn new(config: &ChatConfig, messages: Vec<Message>) -> Self {
+        Self {
             messages,
             model: config.model.to_string(),
             max_tokens: config.max_tokens.value.try_into().expect("max tokens"),
@@ -30,60 +30,31 @@ impl GptRequest {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, Copy)]
+#[derive(Debug, Deserialize, Serialize, Clone, Copy, PartialEq)]
 #[serde(rename_all = "snake_case")]
-pub enum GptRole {
+enum Role {
     User,
     System,
     Assistant,
 }
 
-impl From<GptRole> for Role {
-    fn from(value: GptRole) -> Self {
+impl From<GenericRole> for Role {
+    fn from(value: GenericRole) -> Self {
         match value {
-            GptRole::System => Self::System,
-            GptRole::Assistant => Self::Assistant(Provider::OpenAi),
-            GptRole::User => Self::User,
-        }
-    }
-}
-
-impl From<Role> for GptRole {
-    fn from(value: Role) -> Self {
-        match value {
-            Role::System => Self::System,
-            Role::Assistant(_) => Self::Assistant,
-            Role::User => Self::User,
+            GenericRole::Assistant(_) => Self::Assistant,
+            GenericRole::User => Self::User,
         }
     }
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct GptMessage {
-    pub role: GptRole,
+struct Message {
+    pub role: Role,
     pub content: String,
 }
 
-impl GptMessage {
-    #[must_use]
-    pub fn new_user_message(content: String) -> Self {
-        GptMessage {
-            role: GptRole::User,
-            content,
-        }
-    }
-
-    #[must_use]
-    pub fn new_system_message(content: String) -> Self {
-        GptMessage {
-            role: GptRole::System,
-            content,
-        }
-    }
-}
-
-impl From<&Message> for GptMessage {
-    fn from(value: &Message) -> Self {
+impl From<&GenericMessage> for Message {
+    fn from(value: &GenericMessage) -> Self {
         Self {
             role: value.role.into(),
             content: value.content.clone(),
@@ -91,16 +62,7 @@ impl From<&Message> for GptMessage {
     }
 }
 
-impl From<&GptMessage> for Message {
-    fn from(value: &GptMessage) -> Self {
-        Self {
-            role: value.role.into(),
-            content: value.content.clone(),
-        }
-    }
-}
-
-impl std::fmt::Display for GptMessage {
+impl std::fmt::Display for Message {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}: {}", self.role, self.content)
     }
@@ -108,23 +70,23 @@ impl std::fmt::Display for GptMessage {
 
 #[allow(dead_code)]
 #[derive(Deserialize, Debug)]
-pub struct GptResponseChoice {
+struct ResponseChoice {
     pub index: u16,
-    pub message: GptMessage,
+    pub message: Message,
     pub logprobs: Option<()>,
     pub finish_reason: String,
 }
 
 #[derive(Deserialize, Debug)]
 #[allow(clippy::struct_field_names)]
-pub struct GptResponseUsage {
+struct ResponseUsage {
     pub prompt_tokens: u32,
     pub completion_tokens: u32,
     pub total_tokens: u32,
 }
 
-impl From<GptResponseUsage> for TokenUsage {
-    fn from(value: GptResponseUsage) -> Self {
+impl From<ResponseUsage> for TokenUsage {
+    fn from(value: ResponseUsage) -> Self {
         TokenUsage {
             prompt: value.prompt_tokens,
             completion: value.completion_tokens,
@@ -135,24 +97,24 @@ impl From<GptResponseUsage> for TokenUsage {
 
 #[allow(dead_code)]
 #[derive(Deserialize, Debug)]
-pub struct GptResponse {
+struct Response {
     pub id: String,
     pub object: String,
     pub created: u128,
     pub model: String,
-    pub choices: Vec<GptResponseChoice>,
-    pub usage: GptResponseUsage,
+    pub choices: Vec<ResponseChoice>,
+    pub usage: ResponseUsage,
     pub system_fingerprint: String,
 }
 
 #[derive(Deserialize, Debug)]
-pub struct GptErrorContainer {
-    pub error: GptError,
+struct ErrorContainer {
+    pub error: Error,
 }
 
 #[derive(Deserialize, Debug)]
 #[allow(unused)]
-pub struct GptError {
+struct Error {
     pub message: String,
     pub r#type: String,
     pub param: String,
@@ -164,14 +126,13 @@ pub async fn get_completion(
     conversation: &Conversation,
 ) -> Result<CompletionResponse> {
     let client = reqwest::Client::new();
-    let call_data = GptRequest::new(
-        &config.openai.chat,
-        conversation
-            .messages
-            .iter()
-            .map(std::convert::Into::into)
-            .collect(),
-    );
+    let system_message = Message {
+        role: Role::System,
+        content: conversation.system_instructions.clone(),
+    };
+    let mut messages = vec![system_message];
+    messages.extend(&mut conversation.messages.iter().map(std::convert::Into::into));
+    let call_data = Request::new(&config.openai.chat, messages);
     let raw_response = client
         .post("https://api.openai.com/v1/chat/completions")
         .bearer_auth(&config.openai.key)
@@ -182,21 +143,27 @@ pub async fn get_completion(
         .text()
         .await
         .context("parse api response as json")?;
-    match serde_json::from_str::<GptResponse>(&raw_response) {
-        Ok(gpt_response) => {
-            let message = &gpt_response
+    match serde_json::from_str::<Response>(&raw_response) {
+        Ok(parsed_response) => {
+            let message = &parsed_response
                 .choices
                 .first()
                 .context("missing response choices")?
                 .message;
+            if message.role != Role::Assistant {
+                anyhow::bail!("unexpected non-assistant role response");
+            };
+            let generic_message = GenericMessage {
+                role: GenericRole::Assistant(Provider::OpenAi),
+                content: message.content.clone(),
+            };
             let response = CompletionResponse {
-                message: message.into(),
-                usage: gpt_response.usage.into(),
+                message: generic_message,
+                usage: parsed_response.usage.into(),
             };
             Ok(response)
         }
-        Err(response_parse_error) => match serde_json::from_str::<GptErrorContainer>(&raw_response)
-        {
+        Err(response_parse_error) => match serde_json::from_str::<ErrorContainer>(&raw_response) {
             Ok(error) => Err(anyhow::Error::msg(error.error.message.to_string())),
             Err(_error_parse_error) => {
                 let error_message =

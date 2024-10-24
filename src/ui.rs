@@ -107,7 +107,14 @@ fn draw_conversation(
                 .into(),
         ])
     } else {
-        let mut lines: Vec<Line> = Vec::new();
+        let active_conversation = &state.get_active_conversation()?;
+        let mut lines: Vec<Line> = vec!["System"
+            .fg(state.config.ui.colors.text.highlight)
+            .underlined()
+            .into()];
+        for line in active_conversation.system_instructions.lines() {
+            lines.push(line.to_owned().fg(text_color).into());
+        }
         for message in &state.get_active_conversation()?.messages {
             lines.push(
                 format!("{}:", message.role)
