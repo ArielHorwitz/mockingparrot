@@ -107,20 +107,6 @@ struct Response {
     pub system_fingerprint: String,
 }
 
-#[derive(Deserialize, Debug)]
-struct ErrorContainer {
-    pub error: Error,
-}
-
-#[derive(Deserialize, Debug)]
-#[allow(unused)]
-struct Error {
-    pub message: String,
-    pub r#type: String,
-    pub param: String,
-    pub code: Option<String>,
-}
-
 pub async fn get_completion(
     config: &Config,
     conversation: &Conversation,
@@ -143,33 +129,23 @@ pub async fn get_completion(
         .text()
         .await
         .context("parse api response as json")?;
-    match serde_json::from_str::<Response>(&raw_response) {
-        Ok(parsed_response) => {
-            let message = &parsed_response
-                .choices
-                .first()
-                .context("missing response choices")?
-                .message;
-            if message.role != Role::Assistant {
-                anyhow::bail!("unexpected non-assistant role response");
-            };
-            let generic_message = GenericMessage {
-                role: GenericRole::Assistant(Provider::OpenAi),
-                content: message.content.clone(),
-            };
-            let response = CompletionResponse {
-                message: generic_message,
-                usage: parsed_response.usage.into(),
-            };
-            Ok(response)
-        }
-        Err(response_parse_error) => match serde_json::from_str::<ErrorContainer>(&raw_response) {
-            Ok(error) => Err(anyhow::Error::msg(error.error.message.to_string())),
-            Err(_error_parse_error) => {
-                let error_message =
-                    format!("failed to parse response: {response_parse_error}\n{raw_response}");
-                Err(anyhow::Error::msg(error_message))
-            }
-        },
-    }
+    let parsed_response = serde_json::from_str::<Response>(&raw_response)
+        .with_context(|| format!("failed to parse response: {raw_response}"))?;
+    let message = &parsed_response
+        .choices
+        .first()
+        .context("missing response choices")?
+        .message;
+    if message.role != Role::Assistant {
+        anyhow::bail!("unexpected non-assistant role response");
+    };
+    let generic_message = GenericMessage {
+        role: GenericRole::Assistant(Provider::OpenAi),
+        content: message.content.clone(),
+    };
+    let response = CompletionResponse {
+        message: generic_message,
+        usage: parsed_response.usage.into(),
+    };
+    Ok(response)
 }
