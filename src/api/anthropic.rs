@@ -1,12 +1,31 @@
-use crate::api::{CompletionResponse, Provider, TokenUsage};
-use crate::config::anthropic::Chat as ChatConfig;
-use crate::config::Config;
+use crate::api::{CompletionResponse, TokenUsage};
+use crate::config::anthropic::{Anthropic as Config, Chat as ChatConfig};
 use crate::conversation::{Conversation, Message as GenericMessage, Role as GenericRole};
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
 const MESSAGES_URL: &str = "https://api.anthropic.com/v1/messages";
 const MODEL_VERSION: &str = "2023-06-01";
+
+#[allow(non_camel_case_types)]
+#[derive(Debug, Deserialize, Serialize, Clone, Copy)]
+pub enum Model {
+    #[serde(rename = "claude-3-5-sonnet")]
+    Claude_3_5_Sonnet,
+    #[serde(rename = "claude-3-sonnet")]
+    Claude_3_Sonnet,
+    #[serde(rename = "claude-3-opus")]
+    Claude_3_Opus,
+    #[serde(rename = "claude-3-haiku")]
+    Claude_3_Haiku,
+}
+
+impl std::fmt::Display for Model {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let serialized_name = serde_json::to_string(self).map_err(|_| std::fmt::Error)?;
+        write!(f, "{}-latest", serialized_name.trim_matches('"'))
+    }
+}
 
 #[derive(Serialize, Debug)]
 struct Request {
@@ -18,14 +37,15 @@ struct Request {
 }
 
 impl Request {
-    fn new(config: &ChatConfig, conversation: &Conversation) -> Self {
+    fn new(model: Model, config: &ChatConfig, conversation: &Conversation) -> Self {
+        let messages = conversation
+            .messages
+            .iter()
+            .map(std::convert::Into::into)
+            .collect();
         Request {
-            messages: conversation
-                .messages
-                .iter()
-                .map(std::convert::Into::into)
-                .collect(),
-            model: config.model.to_string(),
+            messages,
+            model: model.to_string(),
             max_tokens: config.max_tokens.value.try_into().expect("max tokens"),
             temperature: config.temperature.value,
             system: conversation.system_instructions.clone(),
@@ -38,15 +58,6 @@ impl Request {
 enum Role {
     User,
     Assistant,
-}
-
-impl From<Role> for GenericRole {
-    fn from(value: Role) -> Self {
-        match value {
-            Role::Assistant => Self::Assistant(Provider::Anthropic),
-            Role::User => Self::User,
-        }
-    }
 }
 
 impl From<GenericRole> for Role {
@@ -66,15 +77,6 @@ struct Message {
 
 impl From<&GenericMessage> for Message {
     fn from(value: &GenericMessage) -> Self {
-        Self {
-            role: value.role.into(),
-            content: value.content.clone(),
-        }
-    }
-}
-
-impl From<&Message> for GenericMessage {
-    fn from(value: &Message) -> Self {
         Self {
             role: value.role.into(),
             content: value.content.clone(),
@@ -125,14 +127,15 @@ struct Response {
 }
 
 pub async fn get_completion(
+    model: Model,
     config: &Config,
     conversation: &Conversation,
 ) -> Result<CompletionResponse> {
     let client = reqwest::Client::new();
-    let call_data = Request::new(&config.anthropic.chat, conversation);
+    let call_data = Request::new(model, &config.chat, conversation);
     let raw_response = client
         .post(MESSAGES_URL)
-        .header("x-api-key", &config.anthropic.key)
+        .header("x-api-key", &config.key)
         .header("anthropic-version", MODEL_VERSION)
         .header("content-type", "application/json")
         .json(&call_data)
@@ -153,7 +156,7 @@ pub async fn get_completion(
         .context("missing response choices")?
         .text;
     let message = GenericMessage {
-        role: GenericRole::Assistant(Provider::Anthropic),
+        role: GenericRole::Assistant(crate::api::ProviderModel::Anthropic(model)),
         content: message_content.clone(),
     };
     let response = CompletionResponse {

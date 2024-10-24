@@ -289,7 +289,7 @@ fn draw_config(
         *areas_iter.next().context("ui index")?,
     );
     frame.render_widget(
-        Paragraph::new(format!("Model: {}", state.config.openai.chat.model)).style(text_style),
+        Paragraph::new(format!("Model: {}", state.config.model)).style(text_style),
         *areas_iter.next().context("ui index")?,
     );
 

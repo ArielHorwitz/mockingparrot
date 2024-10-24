@@ -1,11 +1,11 @@
-use crate::api::Provider;
+use crate::api::ProviderModel;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize, Clone, Copy)]
 #[serde(rename_all = "snake_case")]
 pub enum Role {
     User,
-    Assistant(Provider),
+    Assistant(ProviderModel),
 }
 
 impl std::fmt::Display for Role {
