@@ -6,7 +6,7 @@ use crate::state::focus::{
 };
 use crate::state::State;
 use anyhow::{Context, Result};
-use crossterm::event::{self, Event, KeyEvent, KeyEventKind};
+use ratatui::crossterm::event::{self, Event, KeyEvent, KeyEventKind};
 
 mod actions;
 

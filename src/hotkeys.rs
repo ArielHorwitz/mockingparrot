@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, ModifierKeyCode};
+use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers, ModifierKeyCode};
 use serde::de::Visitor;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 pub type HotkeyActionConfig = Option<Vec<HotkeyEvent>>;
 pub type HotkeyConfig = HashMap<HotkeyAction, HotkeyActionConfig>;
@@ -36,7 +36,7 @@ pub enum HotkeyAction {
     ViewDebugTab,
 }
 
-#[derive(Debug, Serialize, Hash, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Hash, Clone, Copy, PartialEq, Eq)]
 pub struct HotkeyEvent {
     pub code: KeyCode,
     pub modifiers: KeyModifiers,

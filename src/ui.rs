@@ -174,7 +174,7 @@ fn draw_conversation_prompt(
         .title_style(frame_title_style);
     let inner = block.inner(rect);
     frame.render_widget(block, rect);
-    frame.render_widget(state.ui.prompt_textarea.widget(), inner);
+    frame.render_widget(&state.ui.prompt_textarea, inner);
 }
 
 fn draw_conversation_history(frame: &mut Frame, rect: Rect, state: &mut State) {
