@@ -1,73 +1,30 @@
-use crate::hotkeys::HotkeyConfig;
+use crate::app::hotkeys::HotkeyConfig;
 use anyhow::{Context, Result};
 use serde::Deserialize;
-use std::ops::{Add, Sub};
 
-pub mod anthropic;
-pub mod openai;
+mod system;
 mod ui;
+mod value_range;
+
+pub use value_range::ValueRange;
 
 const CONFIG_TEMPLATE: &str = include_str!("../config.template.toml");
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Config {
     pub model: crate::api::ProviderModel,
-    pub openai: openai::OpenAi,
-    pub anthropic: anthropic::Anthropic,
+    pub openai: crate::api::openai::Config,
+    pub anthropic: crate::api::anthropic::Config,
     pub ui: ui::Ui,
     pub commands: Commands,
-    pub system: System,
+    pub system: system::System,
     pub hotkeys: HotkeyConfig,
-}
-
-#[derive(Debug, Deserialize, Copy, Clone)]
-pub struct ValueRange<T> {
-    pub value: T,
-    pub min: T,
-    pub max: T,
-    #[serde(alias = "step")]
-    pub increment_step: T,
-}
-
-impl<T> ValueRange<T>
-where
-    T: Copy + Add<Output = T> + Sub<Output = T> + PartialOrd,
-{
-    pub fn increment(&mut self) {
-        self.value = num_traits::clamp(self.value.add(self.increment_step), self.min, self.max);
-    }
-
-    pub fn decrement(&mut self) {
-        self.value = num_traits::clamp(self.value.sub(self.increment_step), self.min, self.max);
-    }
 }
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Commands {
     pub editor: Vec<String>,
     pub copy: Vec<String>,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-pub struct System {
-    pub instructions: Vec<SystemInstructions>,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-pub struct SystemInstructions {
-    pub name: String,
-    pub message: String,
-}
-
-impl SystemInstructions {
-    #[must_use]
-    pub fn preview(&self, length: usize) -> String {
-        self.message
-            .chars()
-            .take(length)
-            .map(|char| if char == '\n' { ' ' } else { char })
-            .collect()
-    }
 }
 
 pub fn get_config_from_file(config_file: &std::path::Path) -> Result<Config> {

@@ -3,9 +3,9 @@ use crossterm::ExecutableCommand;
 use ratatui::prelude::{Backend, CrosstermBackend, Terminal};
 use std::io::stdout;
 
-use mockingparrot::events;
-use mockingparrot::state::State;
-use mockingparrot::ui;
+use mockingparrot::app::events;
+use mockingparrot::app::state::State;
+use mockingparrot::app::ui;
 
 const FRAME_DURATION_MS: u64 = 50;
 

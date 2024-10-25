@@ -1,14 +1,12 @@
-use crate::conversation::Conversation;
-use crate::conversation::Message;
-use crate::hotkeys::HotkeyAction;
-use crate::state::focus::{
+use crate::app::actions;
+use crate::app::focus::{
     Config as ConfigFocus, Conversation as ConversationFocus, Scope, Tab as TabFocus,
 };
-use crate::state::State;
+use crate::app::hotkeys::HotkeyAction;
+use crate::app::state::State;
+use crate::chat::{Conversation, Message};
 use anyhow::{Context, Result};
 use ratatui::crossterm::event::{self, Event, KeyEvent, KeyEventKind};
-
-mod actions;
 
 pub enum HandleEventResult {
     None,

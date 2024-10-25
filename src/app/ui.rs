@@ -1,8 +1,6 @@
+use crate::app::focus::{Config as ConfigFocus, Conversation as ConversationFocus, Scope};
+use crate::app::state::State;
 use crate::config::ValueRange;
-use crate::state::{
-    focus::{Config as ConfigFocus, Conversation as ConversationFocus, Scope},
-    State,
-};
 use anyhow::{Context, Result};
 use ratatui::{
     layout::Margin,
@@ -379,7 +377,7 @@ fn draw_config_note(frame: &mut Frame, rect: Rect, state: &State) {
     let edit_hotkey_repr = state
         .config
         .hotkeys
-        .get(&crate::hotkeys::HotkeyAction::Edit)
+        .get(&crate::app::hotkeys::HotkeyAction::Edit)
         .and_then(|vec_opt| {
             if let Some(v) = vec_opt {
                 return v

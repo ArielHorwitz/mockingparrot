@@ -1,8 +1,23 @@
 use crate::api::{CompletionResponse, TokenUsage};
-use crate::config::openai::OpenAi as Config;
-use crate::conversation::{Conversation, Message as GenericMessage, Role as GenericRole};
+use crate::chat::{Conversation, Message as GenericMessage, Role as GenericRole};
+use crate::config::ValueRange;
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct Config {
+    pub key: String,
+    pub chat: ChatConfig,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct ChatConfig {
+    pub temperature: ValueRange<f32>,
+    pub top_p: ValueRange<f32>,
+    pub frequency_penalty: ValueRange<f32>,
+    pub presence_penalty: ValueRange<f32>,
+    pub max_tokens: ValueRange<u16>,
+}
 
 #[allow(non_camel_case_types)]
 #[derive(Debug, Deserialize, Serialize, Clone, Copy)]

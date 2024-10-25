@@ -1,5 +1,5 @@
 use crate::api::get_completion;
-use crate::state::State;
+use crate::app::state::State;
 use anyhow::{Context, Result};
 use std::io::Write;
 use std::process::Command;

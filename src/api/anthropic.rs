@@ -1,11 +1,23 @@
 use crate::api::{CompletionResponse, TokenUsage};
-use crate::config::anthropic::{Anthropic as Config, Chat as ChatConfig};
-use crate::conversation::{Conversation, Message as GenericMessage, Role as GenericRole};
+use crate::chat::{Conversation, Message as GenericMessage, Role as GenericRole};
+use crate::config::ValueRange;
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
 const MESSAGES_URL: &str = "https://api.anthropic.com/v1/messages";
 const MODEL_VERSION: &str = "2023-06-01";
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct Config {
+    pub key: String,
+    pub chat: ChatConfig,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct ChatConfig {
+    pub temperature: ValueRange<f32>,
+    pub max_tokens: ValueRange<u16>,
+}
 
 #[allow(non_camel_case_types)]
 #[derive(Debug, Deserialize, Serialize, Clone, Copy)]

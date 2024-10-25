@@ -1,19 +1,17 @@
 use crate::{
+    app::focus::Focus,
+    app::hotkeys,
+    chat::Conversation,
     config::{get_config_from_file, Config},
-    conversation::Conversation,
 };
 use anyhow::{Context, Result};
 use std::io::Write;
 use std::path::PathBuf;
 use tui_textarea::TextArea;
 
-pub mod focus;
-
-use focus::Focus;
-
 pub struct State {
     pub config: Config,
-    pub hotkey_map: crate::hotkeys::HotkeyMap,
+    pub hotkey_map: hotkeys::HotkeyMap,
     pub paths: Paths,
     pub conversations: Vec<Conversation>,
     pub ui: Ui,
@@ -23,7 +21,7 @@ impl State {
     pub fn new() -> Result<Self> {
         let paths = Paths::generate_dirs().context("generate directories")?;
         let config = get_config_from_file(&paths.config_file).context("get config from file")?;
-        let hotkey_map = crate::hotkeys::get_hotkey_config(config.hotkeys.clone());
+        let hotkey_map = hotkeys::get_hotkey_config(config.hotkeys.clone());
         let system_instructions = config
             .system
             .instructions
@@ -58,7 +56,7 @@ impl State {
     pub fn reload_config(&mut self) -> Result<()> {
         self.config =
             get_config_from_file(&self.paths.config_file).context("get config from file")?;
-        self.hotkey_map = crate::hotkeys::get_hotkey_config(self.config.hotkeys.clone());
+        self.hotkey_map = hotkeys::get_hotkey_config(self.config.hotkeys.clone());
         self.set_status_bar_text(format!(
             "Reloaded config file: {}",
             self.paths.config_file.display()

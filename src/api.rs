@@ -1,5 +1,5 @@
+use crate::chat::{Conversation, Message};
 use crate::config::Config;
-use crate::conversation::{Conversation, Message};
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
