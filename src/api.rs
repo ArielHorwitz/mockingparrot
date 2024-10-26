@@ -7,18 +7,17 @@ pub mod anthropic;
 pub mod openai;
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case", tag = "provider", content = "model")]
-pub enum ProviderModel {
-    OpenAi(openai::Model),
-    Anthropic(anthropic::Model),
+pub enum Provider {
+    #[serde(rename = "openai")]
+    OpenAi,
+    #[serde(rename = "anthropic")]
+    Anthropic,
 }
 
-impl std::fmt::Display for ProviderModel {
+impl std::fmt::Display for Provider {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::OpenAi(model) => write!(f, "OpenAI [{model}]"),
-            Self::Anthropic(model) => write!(f, "Anthropic [{model}]"),
-        }
+        let serialized_name = serde_json::to_string(self).map_err(|_| std::fmt::Error)?;
+        write!(f, "{}", serialized_name.trim_matches('"'))
     }
 }
 
@@ -47,14 +46,12 @@ pub async fn get_completion(
     config: &Config,
     conversation: &Conversation,
 ) -> Result<CompletionResponse> {
-    match config.model {
-        ProviderModel::OpenAi(model) => openai::get_completion(model, &config.openai, conversation)
+    match config.provider {
+        Provider::OpenAi => openai::get_completion(&config.openai, conversation)
             .await
             .context("get openai completion"),
-        ProviderModel::Anthropic(model) => {
-            anthropic::get_completion(model, &config.anthropic, conversation)
-                .await
-                .context("get anthropic completion")
-        }
+        Provider::Anthropic => anthropic::get_completion(&config.anthropic, conversation)
+            .await
+            .context("get anthropic completion"),
     }
 }

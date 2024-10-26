@@ -47,7 +47,7 @@ impl Default for Focus {
         Self {
             tab: Tab::Conversation,
             conversation: Conversation::Messages,
-            config: Config::MaxTokens,
+            config: Config::OpenAi,
         }
     }
 }
@@ -69,33 +69,24 @@ pub enum Conversation {
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Config {
-    MaxTokens,
-    Temperature,
-    TopP,
-    FrequencyPenalty,
-    PresencePenalty,
+    OpenAi,
+    Anthropic,
 }
 
 impl Config {
     #[must_use]
     pub fn next_cycle(&self) -> Config {
         match self {
-            Config::MaxTokens => Config::Temperature,
-            Config::Temperature => Config::TopP,
-            Config::TopP => Config::FrequencyPenalty,
-            Config::FrequencyPenalty => Config::PresencePenalty,
-            Config::PresencePenalty => Config::MaxTokens,
+            Self::OpenAi => Self::Anthropic,
+            Self::Anthropic => Self::OpenAi,
         }
     }
 
     #[must_use]
     pub fn prev_cycle(&self) -> Config {
         match self {
-            Config::MaxTokens => Config::PresencePenalty,
-            Config::Temperature => Config::MaxTokens,
-            Config::TopP => Config::Temperature,
-            Config::FrequencyPenalty => Config::TopP,
-            Config::PresencePenalty => Config::FrequencyPenalty,
+            Self::OpenAi => Self::Anthropic,
+            Self::Anthropic => Self::OpenAi,
         }
     }
 }

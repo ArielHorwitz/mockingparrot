@@ -7,11 +7,13 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Deserialize, Clone)]
 pub struct Config {
     pub key: String,
-    pub chat: ChatConfig,
+    pub models: Vec<Model>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
-pub struct ChatConfig {
+pub struct Model {
+    pub id: String,
+    pub name: String,
     pub temperature: ValueRange<f32>,
     pub top_p: ValueRange<f32>,
     pub frequency_penalty: ValueRange<f32>,
@@ -19,23 +21,9 @@ pub struct ChatConfig {
     pub max_tokens: ValueRange<u16>,
 }
 
-#[allow(non_camel_case_types)]
-#[derive(Debug, Deserialize, Serialize, Clone, Copy)]
-pub enum Model {
-    #[serde(rename = "gpt-4o")]
-    Gpt_4o,
-    #[serde(rename = "gpt-4o-mini")]
-    Gpt_4o_Mini,
-    #[serde(rename = "o1-preview")]
-    o1,
-    #[serde(rename = "o1-mini")]
-    o1_Mini,
-}
-
 impl std::fmt::Display for Model {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let serialized_name = serde_json::to_string(self).map_err(|_| std::fmt::Error)?;
-        write!(f, "{}", serialized_name.trim_matches('"'))
+        write!(f, "{} [by OpenAI]", self.name)
     }
 }
 
@@ -51,7 +39,7 @@ struct Request {
 }
 
 impl Request {
-    fn new(model: Model, config: &Config, conversation: &Conversation) -> Self {
+    fn new(model: &Model, conversation: &Conversation) -> Self {
         let system_message = Message {
             role: Role::System,
             content: conversation.system_instructions.clone(),
@@ -60,12 +48,12 @@ impl Request {
         messages.extend(&mut conversation.messages.iter().map(std::convert::Into::into));
         Self {
             messages,
-            model: model.to_string(),
-            max_tokens: config.chat.max_tokens.value.try_into().expect("max tokens"),
-            temperature: config.chat.temperature.value,
-            top_p: config.chat.top_p.value,
-            frequency_penalty: config.chat.frequency_penalty.value,
-            presence_penalty: config.chat.presence_penalty.value,
+            model: model.id.clone(),
+            max_tokens: model.max_tokens.value.try_into().expect("max tokens"),
+            temperature: model.temperature.value,
+            top_p: model.top_p.value,
+            frequency_penalty: model.frequency_penalty.value,
+            presence_penalty: model.presence_penalty.value,
         }
     }
 }
@@ -78,8 +66,8 @@ enum Role {
     Assistant,
 }
 
-impl From<GenericRole> for Role {
-    fn from(value: GenericRole) -> Self {
+impl From<&GenericRole> for Role {
+    fn from(value: &GenericRole) -> Self {
         match value {
             GenericRole::Assistant(_) => Self::Assistant,
             GenericRole::User => Self::User,
@@ -96,7 +84,7 @@ struct Message {
 impl From<&GenericMessage> for Message {
     fn from(value: &GenericMessage) -> Self {
         Self {
-            role: value.role.into(),
+            role: (&value.role).into(),
             content: value.content.clone(),
         }
     }
@@ -148,12 +136,15 @@ struct Response {
 }
 
 pub async fn get_completion(
-    model: Model,
     config: &Config,
     conversation: &Conversation,
 ) -> Result<CompletionResponse> {
+    let model = config
+        .models
+        .first()
+        .context("no models configured for OpenAI")?;
     let client = reqwest::Client::new();
-    let call_data = Request::new(model, config, conversation);
+    let call_data = Request::new(model, conversation);
     let raw_response = client
         .post("https://api.openai.com/v1/chat/completions")
         .bearer_auth(&config.key)
@@ -175,7 +166,7 @@ pub async fn get_completion(
         anyhow::bail!("unexpected non-assistant role response");
     };
     let generic_message = GenericMessage {
-        role: GenericRole::Assistant(crate::api::ProviderModel::OpenAi(model)),
+        role: GenericRole::Assistant(model.to_string()),
         content: message.content.clone(),
     };
     let response = CompletionResponse {

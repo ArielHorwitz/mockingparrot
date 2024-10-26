@@ -10,32 +10,20 @@ const MODEL_VERSION: &str = "2023-06-01";
 #[derive(Debug, Deserialize, Clone)]
 pub struct Config {
     pub key: String,
-    pub chat: ChatConfig,
+    pub models: Vec<Model>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
-pub struct ChatConfig {
+pub struct Model {
+    pub id: String,
+    pub name: String,
     pub temperature: ValueRange<f32>,
     pub max_tokens: ValueRange<u16>,
 }
 
-#[allow(non_camel_case_types)]
-#[derive(Debug, Deserialize, Serialize, Clone, Copy)]
-pub enum Model {
-    #[serde(rename = "claude-3-5-sonnet")]
-    Claude_3_5_Sonnet,
-    #[serde(rename = "claude-3-sonnet")]
-    Claude_3_Sonnet,
-    #[serde(rename = "claude-3-opus")]
-    Claude_3_Opus,
-    #[serde(rename = "claude-3-haiku")]
-    Claude_3_Haiku,
-}
-
 impl std::fmt::Display for Model {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let serialized_name = serde_json::to_string(self).map_err(|_| std::fmt::Error)?;
-        write!(f, "{}-latest", serialized_name.trim_matches('"'))
+        write!(f, "{} [by Anthropic]", self.name)
     }
 }
 
@@ -49,7 +37,7 @@ struct Request {
 }
 
 impl Request {
-    fn new(model: Model, config: &ChatConfig, conversation: &Conversation) -> Self {
+    fn new(model: &Model, conversation: &Conversation) -> Self {
         let messages = conversation
             .messages
             .iter()
@@ -57,9 +45,9 @@ impl Request {
             .collect();
         Request {
             messages,
-            model: model.to_string(),
-            max_tokens: config.max_tokens.value.try_into().expect("max tokens"),
-            temperature: config.temperature.value,
+            model: model.id.clone(),
+            max_tokens: model.max_tokens.value.try_into().expect("max tokens"),
+            temperature: model.temperature.value,
             system: conversation.system_instructions.clone(),
         }
     }
@@ -72,8 +60,8 @@ enum Role {
     Assistant,
 }
 
-impl From<GenericRole> for Role {
-    fn from(value: GenericRole) -> Self {
+impl From<&GenericRole> for Role {
+    fn from(value: &GenericRole) -> Self {
         match value {
             GenericRole::Assistant(_) => Self::Assistant,
             GenericRole::User => Self::User,
@@ -90,7 +78,7 @@ struct Message {
 impl From<&GenericMessage> for Message {
     fn from(value: &GenericMessage) -> Self {
         Self {
-            role: value.role.into(),
+            role: (&value.role).into(),
             content: value.content.clone(),
         }
     }
@@ -139,12 +127,15 @@ struct Response {
 }
 
 pub async fn get_completion(
-    model: Model,
     config: &Config,
     conversation: &Conversation,
 ) -> Result<CompletionResponse> {
+    let model = config
+        .models
+        .first()
+        .context("no models configured for OpenAI")?;
     let client = reqwest::Client::new();
-    let call_data = Request::new(model, &config.chat, conversation);
+    let call_data = Request::new(model, conversation);
     let raw_response = client
         .post(MESSAGES_URL)
         .header("x-api-key", &config.key)
@@ -168,7 +159,7 @@ pub async fn get_completion(
         .context("missing response choices")?
         .text;
     let message = GenericMessage {
-        role: GenericRole::Assistant(crate::api::ProviderModel::Anthropic(model)),
+        role: GenericRole::Assistant(model.to_string()),
         content: message_content.clone(),
     };
     let response = CompletionResponse {

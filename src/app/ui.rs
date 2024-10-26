@@ -1,10 +1,9 @@
 use crate::app::focus::{Config as ConfigFocus, Conversation as ConversationFocus, Scope};
 use crate::app::state::State;
-use crate::config::ValueRange;
 use anyhow::{Context, Result};
 use ratatui::{
     layout::Margin,
-    prelude::{Constraint, Direction, Layout, Line, Rect, Span, Style, Stylize, Text},
+    prelude::{Constraint, Direction, Layout, Line, Rect, Style, Stylize, Text},
     widgets::{
         Block, Borders, List, ListState, Paragraph, Scrollbar, ScrollbarOrientation,
         ScrollbarState, Wrap,
@@ -116,6 +115,7 @@ fn draw_conversation(
         for message in &state.get_active_conversation()?.messages {
             lines.push(
                 format!("{}:", message.role)
+                    .to_string()
                     .fg(state.config.ui.colors.text.highlight)
                     .into(),
             );
@@ -249,94 +249,45 @@ fn draw_config(
 ) -> Result<()> {
     let outer_layout = Layout::new(
         Direction::Vertical,
-        [Constraint::Min(9), Constraint::Fill(1)],
+        [Constraint::Length(2), Constraint::Fill(1)],
     )
     .split(rect);
     let top_layout = outer_layout.first().context("ui index")?;
     let bottom_layout = outer_layout.get(1).context("ui index")?;
 
     let config_block = Block::new()
-        .borders(Borders::ALL)
+        .borders(Borders::TOP | Borders::LEFT | Borders::RIGHT)
         .border_style(state.config.ui.colors.frame.normal)
         .title("Configuration")
         .title_style(state.config.ui.colors.frame.title);
-    let layout = Layout::new(
-        Direction::Vertical,
-        [
-            Constraint::Length(1),
-            Constraint::Length(1),
-            Constraint::Length(1),
-            Constraint::Length(1),
-            Constraint::Length(1),
-            Constraint::Length(1),
-            Constraint::Length(1),
-        ],
-    )
-    .split(config_block.inner(*top_layout));
-    let mut areas_iter = layout.iter();
 
     let text_style = Style::new().fg(state.config.ui.colors.text.normal);
 
-    frame.render_widget(config_block, *top_layout);
+    frame.render_widget(&config_block, *top_layout);
     frame.render_widget(
         Paragraph::new(format!(
             "Config file: {}",
             state.paths.config_file.display()
         ))
         .style(text_style),
-        *areas_iter.next().context("ui index")?,
+        config_block.inner(*top_layout),
     );
+    let (title, config_details) = match config_scope {
+        ConfigFocus::OpenAi => ("OpenAI", format!("{:#?}", state.config.openai.models)),
+        ConfigFocus::Anthropic => ("Anthropic", format!("{:#?}", state.config.anthropic.models)),
+    };
+
+    let config_block = Block::new()
+        .borders(Borders::ALL)
+        .border_style(state.config.ui.colors.frame.normal)
+        .title(format!("{title} Configuration"))
+        .title_style(state.config.ui.colors.frame.title);
+    frame.render_widget(&config_block, *bottom_layout);
     frame.render_widget(
-        Paragraph::new(format!("Model: {}", state.config.model)).style(text_style),
-        *areas_iter.next().context("ui index")?,
+        Paragraph::new(config_details).style(text_style),
+        config_block.inner(*bottom_layout),
     );
-
-    let area = *areas_iter.next().context("ui index")?;
-    draw_config_range(
-        frame,
-        state,
-        area,
-        &state.config.openai.chat.max_tokens,
-        ConfigFocus::MaxTokens,
-        config_scope,
-    );
-    for (range_type, value_range) in [
-        (
-            ConfigFocus::Temperature,
-            state.config.openai.chat.temperature,
-        ),
-        (ConfigFocus::TopP, state.config.openai.chat.top_p),
-        (
-            ConfigFocus::FrequencyPenalty,
-            state.config.openai.chat.frequency_penalty,
-        ),
-        (
-            ConfigFocus::PresencePenalty,
-            state.config.openai.chat.presence_penalty,
-        ),
-    ] {
-        let area = *areas_iter.next().context("ui index")?;
-        draw_config_range(frame, state, area, &value_range, range_type, config_scope);
-    }
-    draw_config_note(frame, *bottom_layout, state);
     Ok(())
-}
-
-fn draw_config_range<T: std::fmt::Debug + std::fmt::Display>(
-    frame: &mut Frame,
-    state: &State,
-    rect: Rect,
-    value_range: &ValueRange<T>,
-    value_range_type: ConfigFocus,
-    config_scope: ConfigFocus,
-) {
-    let is_focused = value_range_type == config_scope;
-    let color = state.config.ui.colors.text.get_highlight(is_focused);
-    let text = format!(
-        "{:?}: {} ({} - {})",
-        value_range_type, value_range.value, value_range.min, value_range.max,
-    );
-    frame.render_widget(Paragraph::new(text).fg(color), rect);
 }
 
 fn draw_debug(frame: &mut Frame, rect: Rect, state: &mut State) {
@@ -366,50 +317,4 @@ fn draw_debug(frame: &mut Frame, rect: Rect, state: &mut State) {
 
     frame.render_widget(debug_text, rect);
     frame.render_stateful_widget(scrollbar, scrollbar_area, &mut scrollbar_state);
-}
-
-fn draw_config_note(frame: &mut Frame, rect: Rect, state: &State) {
-    let note_block = Block::new()
-        .borders(Borders::ALL)
-        .border_style(state.config.ui.colors.frame.normal)
-        .title("Note")
-        .title_style(state.config.ui.colors.frame.warn);
-    let edit_hotkey_repr = state
-        .config
-        .hotkeys
-        .get(&crate::app::hotkeys::HotkeyAction::Edit)
-        .and_then(|vec_opt| {
-            if let Some(v) = vec_opt {
-                return v
-                    .first()
-                    .map(|h| format!("{:?} + {:?}", h.modifiers, h.code));
-            };
-            None
-        })
-        .unwrap_or_else(|| "<NO HOTKEY SET>".to_string());
-    let note = Text::from_iter([
-        Line::from_iter([
-            Span::styled(
-                "It is generally recommend to alter ",
-                state.config.ui.colors.text.normal,
-            ),
-            Span::styled("top_p", state.config.ui.colors.text.highlight),
-            Span::styled(" or ", state.config.ui.colors.text.normal),
-            Span::styled("temperature", state.config.ui.colors.text.highlight),
-            Span::styled(", but not both.", state.config.ui.colors.text.normal),
-        ])
-        .fg(state.config.ui.colors.text.warn),
-        Line::default(),
-        Line::from_iter([
-            Span::styled(
-                "For a all settings, press: ",
-                state.config.ui.colors.text.normal,
-            ),
-            Span::styled(edit_hotkey_repr, state.config.ui.colors.text.highlight),
-            Span::styled(".", state.config.ui.colors.text.normal),
-        ])
-        .fg(state.config.ui.colors.text.warn),
-    ]);
-    frame.render_widget(note, note_block.inner(rect));
-    frame.render_widget(note_block, rect);
 }
