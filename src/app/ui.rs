@@ -90,7 +90,11 @@ fn draw_conversation(
 
     // Conversation display
     let config_file_str = state.paths.config_file.to_string_lossy();
-    let convo = if state.config.openai.key.is_empty() {
+    let missing_api_key = match state.config.provider {
+        crate::api::Provider::OpenAi => state.config.keys.openai.is_empty(),
+        crate::api::Provider::Anthropic => state.config.keys.anthropic.is_empty(),
+    };
+    let convo = if missing_api_key {
         Text::from_iter([
             "Missing API key"
                 .fg(state.config.ui.colors.text.warn)
@@ -273,8 +277,8 @@ fn draw_config(
         config_block.inner(*top_layout),
     );
     let (title, config_details) = match config_scope {
-        ConfigFocus::OpenAi => ("OpenAI", format!("{:#?}", state.config.openai.models)),
-        ConfigFocus::Anthropic => ("Anthropic", format!("{:#?}", state.config.anthropic.models)),
+        ConfigFocus::OpenAi => ("OpenAI", format!("{:#?}", state.config.models.openai)),
+        ConfigFocus::Anthropic => ("Anthropic", format!("{:#?}", state.config.models.anthropic)),
     };
 
     let config_block = Block::new()

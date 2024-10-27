@@ -47,11 +47,25 @@ pub async fn get_completion(
     conversation: &Conversation,
 ) -> Result<CompletionResponse> {
     match config.provider {
-        Provider::OpenAi => openai::get_completion(&config.openai, conversation)
-            .await
-            .context("get openai completion"),
-        Provider::Anthropic => anthropic::get_completion(&config.anthropic, conversation)
-            .await
-            .context("get anthropic completion"),
+        Provider::OpenAi => {
+            let model = config
+                .models
+                .openai
+                .first()
+                .context("no models configured for OpenAI")?;
+            openai::get_completion(&config.keys.openai, model, conversation)
+                .await
+                .context("get openai completion")
+        },
+        Provider::Anthropic => {
+            let model = config
+                .models
+                .anthropic
+                .first()
+                .context("no models configured for Anthropic")?;
+            anthropic::get_completion(&config.keys.anthropic, model, conversation)
+                .await
+                .context("get anthropic completion")
+        },
     }
 }

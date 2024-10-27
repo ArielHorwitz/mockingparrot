@@ -1,40 +1,11 @@
 # Supported providers include: "openai", "anthropic"
 provider = "openai"
 
-[openai]
-# Get your API key from: https://platform.openai.com/api-keys
-key = ""
-
-[[openai.models]]
-id = "gpt-4o"
-name = "GPT-4o"
-# For details see: https://platform.openai.com/docs/api-reference/chat
-temperature = { value = 1.0, min = 0.0, max = 1.0, step = 0.05 }
-top_p = { value = 1.0, min = 0.0, max = 1.0, step = 0.05 }
-frequency_penalty = { value = 0.0, min = -2.0, max = 2.0, step = 0.05 }
-presence_penalty = { value = 0.0, min = -2.0, max = 2.0, step = 0.05 }
-max_tokens = { value = 4096, min = 128, max = 4096, step = 128 }
-
-[[openai.models]]
-id = "gpt-4o-mini"
-name = "GPT-4o mini"
-# For details see: https://platform.openai.com/docs/api-reference/chat
-temperature = { value = 1.0, min = 0.0, max = 1.0, step = 0.05 }
-top_p = { value = 1.0, min = 0.0, max = 1.0, step = 0.05 }
-frequency_penalty = { value = 0.0, min = -2.0, max = 2.0, step = 0.05 }
-presence_penalty = { value = 0.0, min = -2.0, max = 2.0, step = 0.05 }
-max_tokens = { value = 4096, min = 128, max = 4096, step = 128 }
-
-[anthropic]
+[keys]
+# Get your OpenAI API key from: https://platform.openai.com/api-keys
+openai = ""
 # Get your Anthropic API key from: https://console.anthropic.com/settings/keys
-key = ""
-
-[[anthropic.models]]
-id = "claude-3-5-sonnet-latest"
-name = "Claude 3.5 Sonnet"
-# For details see: https://docs.anthropic.com/en/api/messages
-temperature = { value = 0.5, min = 0.0, max = 1.0, step = 0.05 }
-max_tokens = { value = 8192, min = 128, max = 8192, step = 128 }
+anthropic = ""
 
 [ui.layout]
 prompt_size = 8

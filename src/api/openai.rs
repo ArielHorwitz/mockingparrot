@@ -136,18 +136,15 @@ struct Response {
 }
 
 pub async fn get_completion(
-    config: &Config,
+    key: &str,
+    model: &Model,
     conversation: &Conversation,
 ) -> Result<CompletionResponse> {
-    let model = config
-        .models
-        .first()
-        .context("no models configured for OpenAI")?;
     let client = reqwest::Client::new();
     let call_data = Request::new(model, conversation);
     let raw_response = client
         .post("https://api.openai.com/v1/chat/completions")
-        .bearer_auth(&config.key)
+        .bearer_auth(key)
         .json(&call_data)
         .send()
         .await

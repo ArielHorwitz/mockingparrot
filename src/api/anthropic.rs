@@ -127,18 +127,15 @@ struct Response {
 }
 
 pub async fn get_completion(
-    config: &Config,
+    key: &str,
+    model: &Model,
     conversation: &Conversation,
 ) -> Result<CompletionResponse> {
-    let model = config
-        .models
-        .first()
-        .context("no models configured for OpenAI")?;
     let client = reqwest::Client::new();
     let call_data = Request::new(model, conversation);
     let raw_response = client
         .post(MESSAGES_URL)
-        .header("x-api-key", &config.key)
+        .header("x-api-key", key)
         .header("anthropic-version", MODEL_VERSION)
         .header("content-type", "application/json")
         .json(&call_data)

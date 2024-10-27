@@ -1,12 +1,11 @@
 #[cfg(test)]
 mod config_tests {
-    use mockingparrot::config::Config;
+    use mockingparrot::config::get_config_from_file;
     use std::path::Path;
 
     #[test]
     fn template() {
-        let config_toml = std::fs::read_to_string(Path::new("config.template.toml"))
-            .expect("read config template file");
-        toml::from_str::<Config>(&config_toml).expect("parse config template file toml");
+        let template_file = Path::new("config.template.toml");
+        get_config_from_file(template_file).expect("parse template config file");
     }
 }
