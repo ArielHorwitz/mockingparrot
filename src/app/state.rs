@@ -2,7 +2,7 @@ use crate::{
     app::focus::Focus,
     app::hotkeys,
     chat::Conversation,
-    config::{get_config_from_file, Config},
+    config::{Config, Models},
 };
 use anyhow::{Context, Result};
 use std::io::Write;
@@ -11,6 +11,7 @@ use tui_textarea::TextArea;
 
 pub struct State {
     pub config: Config,
+    pub models: Models,
     pub hotkey_map: hotkeys::HotkeyMap,
     pub paths: Paths,
     pub conversations: Vec<Conversation>,
@@ -20,7 +21,9 @@ pub struct State {
 impl State {
     pub fn new() -> Result<Self> {
         let paths = Paths::generate_dirs().context("generate directories")?;
-        let config = get_config_from_file(&paths.config_file).context("get config from file")?;
+        let config =
+            Config::from_file(&paths.get_config_file(), true).context("get config from disk")?;
+        let models = Models::from_disk(&paths.models_dir, true).context("get models from disk")?;
         let hotkey_map = hotkeys::get_hotkey_config(config.hotkeys.clone());
         let system_instructions = config
             .system
@@ -29,12 +32,13 @@ impl State {
             .context("no system instructions")?
             .message
             .clone();
-        let mut conversations = Self::load_conversations_from_disk(&paths.conversations_file)?;
+        let mut conversations =
+            Self::load_conversations_from_disk(&paths.get_conversations_file())?;
         conversations.insert(0, Conversation::new(system_instructions));
 
         let ui = Ui {
             focus: Focus::default(),
-            status_bar_text: format!("Config file: {}", paths.config_file.display()),
+            status_bar_text: format!("Config file: {}", paths.get_config_file().display()),
             prompt_textarea: TextArea::default(),
             conversation_scroll: 0,
             debug_logs: Vec::new(),
@@ -44,6 +48,7 @@ impl State {
         };
         let mut state = Self {
             config,
+            models,
             hotkey_map,
             paths,
             conversations,
@@ -54,12 +59,14 @@ impl State {
     }
 
     pub fn reload_config(&mut self) -> Result<()> {
-        self.config =
-            get_config_from_file(&self.paths.config_file).context("get config from file")?;
+        self.config = Config::from_file(&self.paths.get_config_file(), false)
+            .context("get config from file")?;
+        self.models =
+            Models::from_disk(&self.paths.models_dir, false).context("get models from disk")?;
         self.hotkey_map = hotkeys::get_hotkey_config(self.config.hotkeys.clone());
         self.set_status_bar_text(format!(
             "Reloaded config file: {}",
-            self.paths.config_file.display()
+            self.paths.get_config_file().display()
         ));
         self.add_debug_log("Reloaded config file.");
         Ok(())
@@ -119,9 +126,7 @@ impl State {
 pub struct Paths {
     pub data_dir: PathBuf,
     pub config_dir: PathBuf,
-    pub config_file: PathBuf,
-    pub message_file: PathBuf,
-    pub conversations_file: PathBuf,
+    pub models_dir: PathBuf,
 }
 
 impl Paths {
@@ -129,25 +134,39 @@ impl Paths {
         let config_dir = dirs::config_dir()
             .context("get config directory")?
             .join(crate::APP_TITLE.to_lowercase());
+        let models_dir = config_dir.join("models");
         let data_dir = dirs::data_dir()
             .context("get data directory")?
             .join(crate::APP_TITLE.to_lowercase());
         if !config_dir.exists() {
             std::fs::create_dir_all(&config_dir).context("create config directory")?;
         }
+        if !models_dir.exists() {
+            std::fs::create_dir_all(&models_dir).context("create models directory")?;
+        }
         if !data_dir.exists() {
             std::fs::create_dir_all(&data_dir).context("create data directory")?;
         }
-        let config_file = config_dir.join("config.toml");
-        let message_file = data_dir.join("message_text");
-        let conversations_file = data_dir.join("conversations.json");
         Ok(Self {
             data_dir,
             config_dir,
-            config_file,
-            message_file,
-            conversations_file,
+            models_dir,
         })
+    }
+
+    #[must_use]
+    pub fn get_config_file(&self) -> PathBuf {
+        self.config_dir.join("config.toml")
+    }
+
+    #[must_use]
+    pub fn get_message_file(&self) -> PathBuf {
+        self.data_dir.join("message_text")
+    }
+
+    #[must_use]
+    pub fn get_conversations_file(&self) -> PathBuf {
+        self.data_dir.join("conversations.json")
     }
 }
 

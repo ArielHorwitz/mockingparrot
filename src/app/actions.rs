@@ -7,13 +7,13 @@ use std::process::Command;
 const API_ERROR_FEEDBACK: &str = "An error occured, see debug logs.";
 
 pub fn get_message_text_from_editor(state: &State, initial_text: &str) -> Result<String> {
-    std::fs::write(&state.paths.message_file, initial_text)
+    std::fs::write(state.paths.get_message_file(), initial_text)
         .context("write initial text to message file")?;
     let mut editor_command_iter = state.config.commands.editor.iter();
     let editor_process_output =
         Command::new(editor_command_iter.next().context("editor command empty")?)
             .args(editor_command_iter.collect::<Vec<&String>>())
-            .arg(&state.paths.message_file)
+            .arg(state.paths.get_message_file())
             .output()
             .context("run editor")?;
     if !editor_process_output.status.success() {
@@ -22,7 +22,7 @@ pub fn get_message_text_from_editor(state: &State, initial_text: &str) -> Result
             editor_process_output.status
         ));
     }
-    let message_text = std::fs::read_to_string(&state.paths.message_file)
+    let message_text = std::fs::read_to_string(state.paths.get_message_file())
         .context("read text from message file")?
         .trim()
         .to_owned();
@@ -33,14 +33,14 @@ pub fn edit_config_file_in_editor(state: &State) -> Result<()> {
     let mut editor_command_iter = state.config.commands.editor.iter();
     Command::new(editor_command_iter.next().context("editor command empty")?)
         .args(editor_command_iter.collect::<Vec<&String>>())
-        .arg(&state.paths.config_file)
+        .arg(state.paths.get_config_file())
         .status()
         .context("run editor")?;
     Ok(())
 }
 
 pub async fn do_prompt(state: &mut State) -> Result<()> {
-    let raw_response = get_completion(&state.config, state.get_active_conversation()?).await;
+    let raw_response = get_completion(state, state.get_active_conversation()?).await;
     match raw_response {
         Ok(response) => {
             state

@@ -1,5 +1,5 @@
+use crate::app::state::State;
 use crate::chat::{Conversation, Message};
-use crate::config::Config;
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
@@ -43,29 +43,29 @@ impl std::fmt::Display for TokenUsage {
 }
 
 pub async fn get_completion(
-    config: &Config,
+    state: &State,
     conversation: &Conversation,
 ) -> Result<CompletionResponse> {
-    match config.provider {
+    match state.config.provider {
         Provider::OpenAi => {
-            let model = config
+            let model = state
                 .models
                 .openai
                 .first()
                 .context("no models configured for OpenAI")?;
-            openai::get_completion(&config.keys.openai, model, conversation)
+            openai::get_completion(&state.config.keys.openai, model, conversation)
                 .await
                 .context("get openai completion")
-        },
+        }
         Provider::Anthropic => {
-            let model = config
+            let model = state
                 .models
                 .anthropic
                 .first()
                 .context("no models configured for Anthropic")?;
-            anthropic::get_completion(&config.keys.anthropic, model, conversation)
+            anthropic::get_completion(&state.config.keys.anthropic, model, conversation)
                 .await
                 .context("get anthropic completion")
-        },
+        }
     }
 }

@@ -89,7 +89,7 @@ fn draw_conversation(
     let text_color = state.config.ui.colors.text.get_active(is_focused);
 
     // Conversation display
-    let config_file_str = state.paths.config_file.to_string_lossy();
+    let config_file_str = state.paths.get_config_file().display().to_string();
     let missing_api_key = match state.config.provider {
         crate::api::Provider::OpenAi => state.config.keys.openai.is_empty(),
         crate::api::Provider::Anthropic => state.config.keys.anthropic.is_empty(),
@@ -271,14 +271,14 @@ fn draw_config(
     frame.render_widget(
         Paragraph::new(format!(
             "Config file: {}",
-            state.paths.config_file.display()
+            state.paths.get_config_file().display()
         ))
         .style(text_style),
         config_block.inner(*top_layout),
     );
     let (title, config_details) = match config_scope {
-        ConfigFocus::OpenAi => ("OpenAI", format!("{:#?}", state.config.models.openai)),
-        ConfigFocus::Anthropic => ("Anthropic", format!("{:#?}", state.config.models.anthropic)),
+        ConfigFocus::OpenAi => ("OpenAI", format!("{:#?}", state.models.openai)),
+        ConfigFocus::Anthropic => ("Anthropic", format!("{:#?}", state.models.anthropic)),
     };
 
     let config_block = Block::new()
