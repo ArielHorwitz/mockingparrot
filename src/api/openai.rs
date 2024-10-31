@@ -4,6 +4,8 @@ use crate::config::ValueRange;
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
+const API_ENDPOINT: &str = "https://api.openai.com/v1/chat/completions";
+
 #[derive(Debug, Deserialize, Clone)]
 pub struct Config {
     pub key: String,
@@ -143,7 +145,7 @@ pub async fn get_completion(
     let client = reqwest::Client::new();
     let call_data = Request::new(model, conversation);
     let raw_response = client
-        .post("https://api.openai.com/v1/chat/completions")
+        .post(API_ENDPOINT)
         .bearer_auth(key)
         .json(&call_data)
         .send()

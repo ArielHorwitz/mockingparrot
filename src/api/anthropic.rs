@@ -4,7 +4,7 @@ use crate::config::ValueRange;
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
-const MESSAGES_URL: &str = "https://api.anthropic.com/v1/messages";
+const API_ENDPOINT: &str = "https://api.anthropic.com/v1/messages";
 const MODEL_VERSION: &str = "2023-06-01";
 
 #[derive(Debug, Deserialize, Clone)]
@@ -134,7 +134,7 @@ pub async fn get_completion(
     let client = reqwest::Client::new();
     let call_data = Request::new(model, conversation);
     let raw_response = client
-        .post(MESSAGES_URL)
+        .post(API_ENDPOINT)
         .header("x-api-key", key)
         .header("anthropic-version", MODEL_VERSION)
         .header("content-type", "application/json")
