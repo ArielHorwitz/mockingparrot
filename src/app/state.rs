@@ -61,14 +61,23 @@ impl State {
     pub fn reload_config(&mut self) -> Result<()> {
         self.config = Config::from_file(&self.paths.get_config_file(), false)
             .context("get config from file")?;
-        self.models =
-            Models::from_disk(&self.paths.models_dir, false).context("get models from disk")?;
         self.hotkey_map = hotkeys::get_hotkey_config(self.config.hotkeys.clone());
         self.set_status_bar_text(format!(
             "Reloaded config file: {}",
             self.paths.get_config_file().display()
         ));
         self.add_debug_log("Reloaded config file.");
+        Ok(())
+    }
+
+    pub fn reload_models(&mut self) -> Result<()> {
+        self.models =
+            Models::from_disk(&self.paths.models_dir, false).context("get models from disk")?;
+        self.set_status_bar_text(format!(
+            "Reloaded model files: {}",
+            self.paths.models_dir.display()
+        ));
+        self.add_debug_log("Reloaded model files.");
         Ok(())
     }
 

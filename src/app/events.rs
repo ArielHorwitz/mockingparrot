@@ -295,6 +295,7 @@ fn handle_config(
             return Ok(HandleEventResult::Redraw);
         }
         (HotkeyAction::Refresh, _) => {
+            state.reload_models()?;
             state.reload_config()?;
         }
         _ => (),
