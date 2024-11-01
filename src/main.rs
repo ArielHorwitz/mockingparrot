@@ -1,7 +1,5 @@
 use anyhow::{Context, Result};
-use crossterm::ExecutableCommand;
-use ratatui::prelude::{Backend, CrosstermBackend, Terminal};
-use std::io::stdout;
+use ratatui::prelude::{Backend, Terminal};
 
 use mockingparrot::app::events;
 use mockingparrot::app::state::State;
@@ -18,22 +16,9 @@ async fn main() {
 
 async fn run() -> Result<()> {
     let state = State::new().context("new app state")?;
-    // Setup terminal
-    stdout()
-        .execute(crossterm::terminal::EnterAlternateScreen)
-        .context("enter alternate terminal screen mode")?;
-    crossterm::terminal::enable_raw_mode().context("enable raw mode")?;
-    let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))
-        .context("new terminal with crossterm backend")?;
-    terminal.clear().context("clear terminal")?;
-    // Run app
+    let mut terminal = ratatui::init();
     let app_result = run_app(&mut terminal, state).await;
-    // Clean up terminal
-    stdout()
-        .execute(crossterm::terminal::LeaveAlternateScreen)
-        .context("leave alternate terminal screen mode")?;
-    crossterm::terminal::disable_raw_mode().context("disabled raw mode")?;
-    // Return app run result
+    ratatui::restore();
     app_result
 }
 
