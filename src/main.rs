@@ -25,11 +25,7 @@ async fn run() -> Result<()> {
 async fn run_app(terminal: &mut Terminal<impl Backend>, mut state: State) -> Result<()> {
     loop {
         terminal
-            .draw(|frame| {
-                if let Err(e) = ui::draw_frame(frame, &mut state) {
-                    todo!("log error: {e}");
-                }
-            })
+            .try_draw(|frame| ui::draw_frame(frame, &mut state).map_err(std::io::Error::other))
             .context("draw frame")?;
         match events::handle(FRAME_DURATION_MS, &mut state)
             .await
