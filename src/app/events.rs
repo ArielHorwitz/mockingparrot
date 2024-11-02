@@ -38,11 +38,6 @@ async fn handle_keys(key_event: KeyEvent, state: &mut State) -> Result<HandleEve
     ) {
         // Global hotkeys
         (_, Some(HotkeyAction::QuitProgram)) => return Ok(HandleEventResult::Quit),
-        (_, Some(HotkeyAction::ViewChatTab)) => {
-            state.ui.focus.set_tab(TabFocus::Chat);
-        }
-        (_, Some(HotkeyAction::ViewConfigTab)) => state.ui.focus.set_tab(TabFocus::Config),
-        (_, Some(HotkeyAction::ViewDebugTab)) => state.ui.focus.set_tab(TabFocus::Debug),
         (_, Some(HotkeyAction::CycleTab)) => state.ui.focus.cycle_tab_next(),
         (_, Some(HotkeyAction::CycleBackTab)) => state.ui.focus.cycle_tab_prev(),
         // Scoped hotkeys

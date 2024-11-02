@@ -31,9 +31,6 @@ pub enum HotkeyAction {
     Decrement,
     CycleTab,
     CycleBackTab,
-    ViewChatTab,
-    ViewConfigTab,
-    ViewDebugTab,
 }
 
 #[derive(Debug, Hash, Clone, Copy, PartialEq, Eq)]
