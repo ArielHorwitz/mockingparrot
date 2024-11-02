@@ -40,8 +40,8 @@ pub fn draw(frame: &mut Frame, state: &mut State) -> Result<()> {
 
     // Main UI
     match state.ui.focus.get_scope() {
-        Scope::Conversation(conversation_scope) => {
-            chat::draw(frame, main_layout, state, conversation_scope).context("draw chat tab")?;
+        Scope::Chat(chat_scope) => {
+            chat::draw(frame, main_layout, state, chat_scope).context("draw chat tab")?;
         }
         Scope::Config(config_scope) => {
             config::draw(frame, main_layout, state, config_scope).context("draw config")?;
@@ -74,7 +74,7 @@ fn draw_title_tabs(
         title_area,
     );
     let selected_tab_index = match state.ui.focus.tab {
-        crate::app::focus::Tab::Conversation => 0,
+        crate::app::focus::Tab::Chat => 0,
         crate::app::focus::Tab::Config => 1,
         crate::app::focus::Tab::Debug => 2,
     };

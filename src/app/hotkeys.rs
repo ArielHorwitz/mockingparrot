@@ -31,7 +31,7 @@ pub enum HotkeyAction {
     Decrement,
     CycleTab,
     CycleBackTab,
-    ViewConversationTab,
+    ViewChatTab,
     ViewConfigTab,
     ViewDebugTab,
 }

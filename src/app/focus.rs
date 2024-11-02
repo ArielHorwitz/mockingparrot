@@ -1,9 +1,9 @@
-const TAB_ORDER: [Tab; 3] = [Tab::Conversation, Tab::Config, Tab::Debug];
+const TAB_ORDER: [Tab; 3] = [Tab::Chat, Tab::Config, Tab::Debug];
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Focus {
     pub tab: Tab,
-    pub conversation: Conversation,
+    pub chat: Chat,
     pub config: Config,
 }
 
@@ -11,7 +11,7 @@ impl Focus {
     #[must_use]
     pub fn get_scope(&self) -> Scope {
         match self.tab {
-            Tab::Conversation => Scope::Conversation(self.conversation),
+            Tab::Chat => Scope::Chat(self.chat),
             Tab::Config => Scope::Config(self.config),
             Tab::Debug => Scope::Debug,
         }
@@ -45,8 +45,8 @@ impl Focus {
 impl Default for Focus {
     fn default() -> Self {
         Self {
-            tab: Tab::Conversation,
-            conversation: Conversation::Messages,
+            tab: Tab::Chat,
+            chat: Chat::Messages,
             config: Config::OpenAi,
         }
     }
@@ -54,13 +54,13 @@ impl Default for Focus {
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Tab {
-    Conversation,
+    Chat,
     Config,
     Debug,
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
-pub enum Conversation {
+pub enum Chat {
     Messages,
     Prompt,
     New,
@@ -93,7 +93,7 @@ impl Config {
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Scope {
-    Conversation(Conversation),
+    Chat(Chat),
     Config(Config),
     Debug,
 }

@@ -1,4 +1,4 @@
-use crate::app::{focus::Conversation as ConversationFocus, state::State};
+use crate::app::{focus::Chat as ChatFocus, state::State};
 use anyhow::{Context, Result};
 use ratatui::{
     prelude::{Constraint, Direction, Layout, Line, Rect, Style, Stylize, Text},
@@ -9,15 +9,10 @@ use ratatui::{
 mod history;
 mod new;
 
-pub fn draw(
-    frame: &mut Frame,
-    rect: Rect,
-    state: &mut State,
-    scope: ConversationFocus,
-) -> Result<()> {
+pub fn draw(frame: &mut Frame, rect: Rect, state: &mut State, scope: ChatFocus) -> Result<()> {
     match scope {
-        ConversationFocus::New => new::draw(frame, rect, state),
-        ConversationFocus::History => history::draw(frame, rect, state),
+        ChatFocus::New => new::draw(frame, rect, state),
+        ChatFocus::History => history::draw(frame, rect, state),
         _ => draw_conversation(frame, rect, state, scope)?,
     };
     Ok(())
@@ -27,7 +22,7 @@ pub fn draw_conversation(
     frame: &mut Frame,
     rect: Rect,
     state: &mut State,
-    scope: ConversationFocus,
+    scope: ChatFocus,
 ) -> Result<()> {
     let layout = Layout::new(
         Direction::Vertical,
@@ -41,7 +36,7 @@ pub fn draw_conversation(
     let prompt_layout = *layout.get(1).context("ui index")?;
     draw_conversation_prompt(frame, prompt_layout, state, scope);
     // Styles
-    let is_focused = scope == ConversationFocus::Messages;
+    let is_focused = scope == ChatFocus::Messages;
     let text_color = state.config.ui.colors.text.get_active(is_focused);
 
     // Conversation display
@@ -117,13 +112,8 @@ pub fn draw_conversation(
     Ok(())
 }
 
-fn draw_conversation_prompt(
-    frame: &mut Frame,
-    rect: Rect,
-    state: &mut State,
-    scope: ConversationFocus,
-) {
-    let is_focused = scope == ConversationFocus::Prompt;
+fn draw_conversation_prompt(frame: &mut Frame, rect: Rect, state: &mut State, scope: ChatFocus) {
+    let is_focused = scope == ChatFocus::Prompt;
     let cursor_style = Style::new().bg(state.config.ui.colors.cursor.get_active(is_focused));
     let text_style = Style::new().fg(state.config.ui.colors.text.get_active(is_focused));
     let frame_style = Style::new().fg(state.config.ui.colors.frame.get_active(is_focused));
