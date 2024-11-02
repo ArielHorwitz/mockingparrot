@@ -32,10 +32,9 @@ async fn handle_keys(key_event: KeyEvent, state: &mut State) -> Result<HandleEve
     if key_event.kind != KeyEventKind::Press {
         return Ok(HandleEventResult::None);
     }
-    match (
-        state.ui.focus.get_scope(),
-        state.hotkey_map.get(&key_event).copied(),
-    ) {
+    let scope = state.ui.focus.get_scope();
+    let hotkey_action_option = state.hotkey_map.get(&key_event).copied();
+    match (scope, hotkey_action_option) {
         // Global hotkeys
         (_, Some(HotkeyAction::QuitProgram)) => return Ok(HandleEventResult::Quit),
         (_, Some(HotkeyAction::CycleTab)) => state.ui.focus.cycle_tab_next(),
