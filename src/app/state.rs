@@ -39,7 +39,7 @@ impl State {
             Self::load_conversations_from_disk(&paths.get_conversations_file())?;
         conversations.insert(0, Conversation::new(system_instructions));
 
-        let ui = ui::Ui::default();
+        let ui = ui::Ui::with_provider(config.provider);
         let mut state = Self {
             config,
             models,

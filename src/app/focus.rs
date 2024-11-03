@@ -1,3 +1,4 @@
+use crate::api::Provider;
 use strum::{EnumIter, IntoEnumIterator};
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -66,12 +67,13 @@ impl Focus {
     }
 }
 
-impl Default for Focus {
-    fn default() -> Self {
+impl Focus {
+    #[must_use]
+    pub fn with_provider(provider: Provider) -> Self {
         Self {
             tab: Tab::Chat,
             chat: Chat::Messages,
-            config: Config::OpenAi,
+            config: Config::from_provider(provider),
         }
     }
 }
@@ -95,6 +97,16 @@ pub enum Chat {
 pub enum Config {
     OpenAi,
     Anthropic,
+}
+
+impl Config {
+    #[must_use]
+    pub fn from_provider(provider: Provider) -> Self {
+        match provider {
+            Provider::OpenAi => Self::OpenAi,
+            Provider::Anthropic => Self::Anthropic,
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
