@@ -1,4 +1,4 @@
-const TAB_ORDER: [Tab; 3] = [Tab::Chat, Tab::Config, Tab::Debug];
+use strum::{EnumIter, IntoEnumIterator};
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Focus {
@@ -23,22 +23,46 @@ impl Focus {
 
     #[allow(clippy::missing_panics_doc)]
     pub fn cycle_tab_next(&mut self) {
-        let len = TAB_ORDER.len();
-        let pos = TAB_ORDER
+        let tabs = Tab::iter().collect::<Vec<Tab>>();
+        let pos = tabs
             .iter()
             .position(|x| *x == self.tab)
-            .expect("missing in tab order");
-        self.tab = TAB_ORDER[(pos + 1) % len];
+            .expect("missing in tab enum");
+        self.tab = *tabs.get((pos + 1) % tabs.len()).expect("get next tab");
     }
 
     #[allow(clippy::missing_panics_doc)]
     pub fn cycle_tab_prev(&mut self) {
-        let len = TAB_ORDER.len();
-        let pos = TAB_ORDER
+        let tabs = Tab::iter().collect::<Vec<Tab>>();
+        let pos = tabs
             .iter()
             .position(|x| *x == self.tab)
-            .expect("missing in tab order");
-        self.tab = TAB_ORDER[(pos + len - 1) % len];
+            .expect("missing in tab enum");
+        self.tab = *tabs.get((pos - 1) % tabs.len()).expect("get prev tab");
+    }
+
+    #[allow(clippy::missing_panics_doc)]
+    pub fn cycle_config_next(&mut self) {
+        let configs = Config::iter().collect::<Vec<_>>();
+        let pos = configs
+            .iter()
+            .position(|x| *x == self.config)
+            .expect("missing in config enum");
+        self.config = *configs
+            .get((pos + 1) % configs.len())
+            .expect("get next config");
+    }
+
+    #[allow(clippy::missing_panics_doc)]
+    pub fn cycle_config_prev(&mut self) {
+        let configs = Config::iter().collect::<Vec<_>>();
+        let pos = configs
+            .iter()
+            .position(|x| *x == self.config)
+            .expect("missing in config enum");
+        self.config = *configs
+            .get((pos - 1) % configs.len())
+            .expect("get prev config");
     }
 }
 
@@ -52,7 +76,7 @@ impl Default for Focus {
     }
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone, Copy, EnumIter)]
 pub enum Tab {
     Chat,
     Config,
@@ -67,28 +91,10 @@ pub enum Chat {
     History,
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone, Copy, EnumIter)]
 pub enum Config {
     OpenAi,
     Anthropic,
-}
-
-impl Config {
-    #[must_use]
-    pub fn next_cycle(&self) -> Config {
-        match self {
-            Self::OpenAi => Self::Anthropic,
-            Self::Anthropic => Self::OpenAi,
-        }
-    }
-
-    #[must_use]
-    pub fn prev_cycle(&self) -> Config {
-        match self {
-            Self::OpenAi => Self::Anthropic,
-            Self::Anthropic => Self::OpenAi,
-        }
-    }
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]

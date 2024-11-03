@@ -723,6 +723,7 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
+ "strum",
  "tokio",
  "toml",
  "tui-textarea",
