@@ -15,14 +15,14 @@ pub fn draw(
 ) -> Result<()> {
     let outer_layout = Layout::new(
         Direction::Vertical,
-        [Constraint::Length(2), Constraint::Fill(1)],
+        [Constraint::Length(3), Constraint::Fill(1)],
     )
     .split(rect);
     let top_layout = outer_layout.first().context("ui index")?;
     let bottom_layout = outer_layout.get(1).context("ui index")?;
 
     let config_block = Block::new()
-        .borders(Borders::TOP | Borders::LEFT | Borders::RIGHT)
+        .borders(Borders::ALL)
         .border_style(state.config.ui.colors.frame.normal)
         .title("Configuration")
         .title_style(state.config.ui.colors.frame.title);
