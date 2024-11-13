@@ -7,7 +7,7 @@ temperature = { value = 1.0, min = 0.0, max = 2.0, step = 0.05 }
 top_p = { value = 1.0, min = 0.0, max = 1.0, step = 0.05 }
 frequency_penalty = { value = 0.0, min = -2.0, max = 2.0, step = 0.05 }
 presence_penalty = { value = 0.0, min = -2.0, max = 2.0, step = 0.05 }
-max_tokens = { value = 4096, min = 128, max = 4096, step = 128 }
+max_tokens = { value = 16384, min = 128, max = 16384, step = 128 }
 
 [[models]]
 id = "gpt-4o-mini"
@@ -16,4 +16,4 @@ temperature = { value = 1.0, min = 0.0, max = 2.0, step = 0.05 }
 top_p = { value = 1.0, min = 0.0, max = 1.0, step = 0.05 }
 frequency_penalty = { value = 0.0, min = -2.0, max = 2.0, step = 0.05 }
 presence_penalty = { value = 0.0, min = -2.0, max = 2.0, step = 0.05 }
-max_tokens = { value = 4096, min = 128, max = 4096, step = 128 }
+max_tokens = { value = 16384, min = 128, max = 16384, step = 128 }
