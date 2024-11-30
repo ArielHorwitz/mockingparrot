@@ -10,7 +10,7 @@ mod ui;
 
 pub use models::Models;
 
-const CONFIG_TEMPLATE: &str = include_str!("../config.template.toml");
+const CONFIG_TEMPLATE: &str = include_str!("../templates/config.toml");
 
 #[derive(Deserialize)]
 pub struct Config {
@@ -55,7 +55,7 @@ mod config_tests {
 
     #[test]
     fn config_template() {
-        let template_file = Path::new("config.template.toml");
-        Config::from_file(template_file, false).expect("load config from template");
+        let template_file = Path::new("templates").join("config.toml");
+        Config::from_file(&template_file, false).expect("load config from template");
     }
 }

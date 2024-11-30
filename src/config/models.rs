@@ -3,8 +3,8 @@ use anyhow::{Context, Result};
 use serde::Deserialize;
 use std::path::Path;
 
-const OPENAI_MODELS_TEMPLATE: &str = include_str!("../../models/openai.toml");
-const ANTHROPIC_MODELS_TEMPLATE: &str = include_str!("../../models/anthropic.toml");
+const OPENAI_MODELS_TEMPLATE: &str = include_str!("../../templates/models/openai.toml");
+const ANTHROPIC_MODELS_TEMPLATE: &str = include_str!("../../templates/models/anthropic.toml");
 
 #[derive(Debug)]
 pub struct Models {
@@ -71,7 +71,7 @@ mod config_tests {
 
     #[test]
     fn models_templates() {
-        let models_dir = Path::new("models");
-        Models::from_disk(models_dir, false).expect("load openai models from template");
+        let models_dir = Path::new("templates").join("models");
+        Models::from_disk(&models_dir, false).expect("load openai models from template");
     }
 }
