@@ -50,7 +50,7 @@ impl<'de> Deserialize<'de> for HotkeyEvent {
 
 struct HotkeyEventVisitor;
 
-impl<'de> Visitor<'de> for HotkeyEventVisitor {
+impl Visitor<'_> for HotkeyEventVisitor {
     type Value = HotkeyEvent;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
