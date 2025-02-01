@@ -4,26 +4,26 @@
 id = "o1-mini"
 name = "o1 mini"
 class = "reasoning"
-temperature = { value = 1.0, min = 0.0, max = 2.0, step = 0.05 }
-top_p = { value = 1.0, min = 0.0, max = 1.0, step = 0.05 }
-frequency_penalty = { value = 0.0, min = -2.0, max = 2.0, step = 0.05 }
-presence_penalty = { value = 0.0, min = -2.0, max = 2.0, step = 0.05 }
-max_tokens = { value = 65536, min = 128, max = 65536, step = 128 }
+# max_completion_tokens = 65536
+# temperature = 1.0
+# top_p = 1.0
+# frequency_penalty = 0.0
+# presence_penalty = 0.0
 
 [[models]]
 id = "gpt-4o"
 name = "GPT-4o"
-temperature = { value = 1.0, min = 0.0, max = 2.0, step = 0.05 }
-top_p = { value = 1.0, min = 0.0, max = 1.0, step = 0.05 }
-frequency_penalty = { value = 0.0, min = -2.0, max = 2.0, step = 0.05 }
-presence_penalty = { value = 0.0, min = -2.0, max = 2.0, step = 0.05 }
-max_tokens = { value = 16384, min = 128, max = 16384, step = 128 }
+# max_completion_tokens = 16384
+# temperature = 1.0
+# top_p = 1.0
+# frequency_penalty = 0.0
+# presence_penalty = 0.0
 
 [[models]]
 id = "gpt-4o-mini"
 name = "GPT-4o mini"
-temperature = { value = 1.0, min = 0.0, max = 2.0, step = 0.05 }
-top_p = { value = 1.0, min = 0.0, max = 1.0, step = 0.05 }
-frequency_penalty = { value = 0.0, min = -2.0, max = 2.0, step = 0.05 }
-presence_penalty = { value = 0.0, min = -2.0, max = 2.0, step = 0.05 }
-max_tokens = { value = 16384, min = 128, max = 16384, step = 128 }
+# max_completion_tokens = 16384
+# temperature = 1.0
+# top_p = 1.0
+# frequency_penalty = 0.0
+# presence_penalty = 0.0

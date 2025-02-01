@@ -1,6 +1,5 @@
 use crate::api::{CompletionResponse, TokenUsage};
 use crate::chat::{Conversation, Message as GenericMessage, Role as GenericRole};
-use crate::config::ValueRange;
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
@@ -25,11 +24,11 @@ pub struct Model {
     pub id: String,
     pub name: String,
     pub class: Option<ModelClass>,
-    pub temperature: ValueRange<f32>,
-    pub top_p: ValueRange<f32>,
-    pub frequency_penalty: ValueRange<f32>,
-    pub presence_penalty: ValueRange<f32>,
-    pub max_tokens: ValueRange<u16>,
+    pub max_completion_tokens: Option<u32>,
+    pub temperature: Option<f32>,
+    pub top_p: Option<f32>,
+    pub frequency_penalty: Option<f32>,
+    pub presence_penalty: Option<f32>,
 }
 
 impl std::fmt::Display for Model {
@@ -42,11 +41,11 @@ impl std::fmt::Display for Model {
 struct Request {
     messages: Vec<Message>,
     model: String,
-    top_p: f32,
-    max_completion_tokens: i16,
-    temperature: f32,
-    frequency_penalty: f32,
-    presence_penalty: f32,
+    max_completion_tokens: Option<u32>,
+    top_p: Option<f32>,
+    temperature: Option<f32>,
+    frequency_penalty: Option<f32>,
+    presence_penalty: Option<f32>,
 }
 
 impl Request {
@@ -66,11 +65,11 @@ impl Request {
         Self {
             messages,
             model: model.id.clone(),
-            max_completion_tokens: model.max_tokens.value.try_into().expect("max tokens"),
-            temperature: model.temperature.value,
-            top_p: model.top_p.value,
-            frequency_penalty: model.frequency_penalty.value,
-            presence_penalty: model.presence_penalty.value,
+            max_completion_tokens: model.max_completion_tokens,
+            temperature: model.temperature,
+            top_p: model.top_p,
+            frequency_penalty: model.frequency_penalty,
+            presence_penalty: model.presence_penalty,
         }
     }
 }

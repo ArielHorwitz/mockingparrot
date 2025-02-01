@@ -1,6 +1,5 @@
 use crate::api::{CompletionResponse, TokenUsage};
 use crate::chat::{Conversation, Message as GenericMessage, Role as GenericRole};
-use crate::config::ValueRange;
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
@@ -17,8 +16,8 @@ pub struct Config {
 pub struct Model {
     pub id: String,
     pub name: String,
-    pub temperature: ValueRange<f32>,
-    pub max_tokens: ValueRange<u16>,
+    pub max_tokens: Option<u32>,
+    pub temperature: Option<f32>,
 }
 
 impl std::fmt::Display for Model {
@@ -31,8 +30,8 @@ impl std::fmt::Display for Model {
 struct Request {
     messages: Vec<Message>,
     model: String,
-    max_tokens: i16,
-    temperature: f32,
+    max_tokens: Option<u32>,
+    temperature: Option<f32>,
     system: String,
 }
 
@@ -46,8 +45,8 @@ impl Request {
         Request {
             messages,
             model: model.id.clone(),
-            max_tokens: model.max_tokens.value.try_into().expect("max tokens"),
-            temperature: model.temperature.value,
+            max_tokens: model.max_tokens,
+            temperature: model.temperature,
             system: conversation.system_instructions.clone(),
         }
     }

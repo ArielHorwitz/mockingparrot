@@ -7,10 +7,8 @@ use std::path::Path;
 mod models;
 mod system;
 mod ui;
-mod value_range;
 
 pub use models::Models;
-pub use value_range::ValueRange;
 
 const CONFIG_TEMPLATE: &str = include_str!("../config.template.toml");
 
