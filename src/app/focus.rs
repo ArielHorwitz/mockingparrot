@@ -1,4 +1,5 @@
 use crate::api::Provider;
+use anyhow::Context;
 use strum::{EnumIter, IntoEnumIterator};
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -29,7 +30,8 @@ impl Focus {
             .iter()
             .position(|x| *x == self.tab)
             .expect("missing in tab enum");
-        self.tab = *tabs.get((pos + 1) % tabs.len()).expect("get next tab");
+        let next_tab = cycle_unsigned(pos, tabs.len(), false).expect("cycle math");
+        self.tab = *tabs.get(next_tab).expect("get next tab");
     }
 
     #[allow(clippy::missing_panics_doc)]
@@ -39,7 +41,8 @@ impl Focus {
             .iter()
             .position(|x| *x == self.tab)
             .expect("missing in tab enum");
-        self.tab = *tabs.get((pos - 1) % tabs.len()).expect("get prev tab");
+        let prev_tab = cycle_unsigned(pos, tabs.len(), true).expect("cycle math");
+        self.tab = *tabs.get(prev_tab).expect("get prev tab");
     }
 
     #[allow(clippy::missing_panics_doc)]
@@ -49,9 +52,8 @@ impl Focus {
             .iter()
             .position(|x| *x == self.config)
             .expect("missing in config enum");
-        self.config = *configs
-            .get((pos + 1) % configs.len())
-            .expect("get next config");
+        let next_pos = cycle_unsigned(pos, configs.len(), false).expect("cycle math");
+        self.config = *configs.get(next_pos).expect("get next config");
     }
 
     #[allow(clippy::missing_panics_doc)]
@@ -61,10 +63,27 @@ impl Focus {
             .iter()
             .position(|x| *x == self.config)
             .expect("missing in config enum");
-        self.config = *configs
-            .get((pos - 1) % configs.len())
-            .expect("get prev config");
+        let prev_pos = cycle_unsigned(pos, configs.len(), true).expect("cycle math");
+        self.config = *configs.get(prev_pos).expect("get prev config");
     }
+}
+
+pub fn cycle_unsigned(current: usize, total: usize, subtract: bool) -> anyhow::Result<usize> {
+    let current = i32::try_from(current).context("i32 from current")?;
+    let total = i32::try_from(total).context("i32 from total")?;
+    let new = if subtract {
+        current.checked_sub(1).context("sub 1")?
+    } else {
+        current.checked_add(1).context("add 1")?
+    };
+    let bounded = new.checked_rem(total).context("remainder from total")?;
+    let positive = if bounded < 0 {
+        bounded.checked_add(total).context("add total to negative")?
+    } else {
+        bounded
+    };
+    let final_result = usize::try_from(positive).context("usize from result")?;
+    Ok(final_result)
 }
 
 impl Focus {
