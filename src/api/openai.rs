@@ -34,7 +34,7 @@ struct Request {
     messages: Vec<Message>,
     model: String,
     top_p: f32,
-    max_tokens: i16,
+    max_completion_tokens: i16,
     temperature: f32,
     frequency_penalty: f32,
     presence_penalty: f32,
@@ -51,7 +51,7 @@ impl Request {
         Self {
             messages,
             model: model.id.clone(),
-            max_tokens: model.max_tokens.value.try_into().expect("max tokens"),
+            max_completion_tokens: model.max_tokens.value.try_into().expect("max tokens"),
             temperature: model.temperature.value,
             top_p: model.top_p.value,
             frequency_penalty: model.frequency_penalty.value,
