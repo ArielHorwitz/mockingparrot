@@ -24,11 +24,11 @@ pub struct Model {
     pub id: String,
     pub name: String,
     pub class: Option<ModelClass>,
-    pub max_completion_tokens: Option<u32>,
-    pub temperature: Option<f32>,
-    pub top_p: Option<f32>,
-    pub frequency_penalty: Option<f32>,
-    pub presence_penalty: Option<f32>,
+    pub max_completion_tokens: u32,
+    pub temperature: f32,
+    pub top_p: f32,
+    pub frequency_penalty: f32,
+    pub presence_penalty: f32,
 }
 
 impl std::fmt::Display for Model {
@@ -41,11 +41,11 @@ impl std::fmt::Display for Model {
 struct Request {
     messages: Vec<Message>,
     model: String,
-    max_completion_tokens: Option<u32>,
-    top_p: Option<f32>,
-    temperature: Option<f32>,
-    frequency_penalty: Option<f32>,
-    presence_penalty: Option<f32>,
+    max_completion_tokens: u32,
+    top_p: f32,
+    temperature: f32,
+    frequency_penalty: f32,
+    presence_penalty: f32,
 }
 
 impl Request {

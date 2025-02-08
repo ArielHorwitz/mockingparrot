@@ -4,26 +4,26 @@
 id = "o1-mini"
 name = "o1 mini"
 class = "reasoning"
-# max_completion_tokens = 65536
-# temperature = 1.0
-# top_p = 1.0
-# frequency_penalty = 0.0
-# presence_penalty = 0.0
+max_completion_tokens = 65536
+temperature = 1.0
+top_p = 1.0
+frequency_penalty = 0.0
+presence_penalty = 0.0
 
 [[models]]
 id = "gpt-4o"
 name = "GPT-4o"
-# max_completion_tokens = 16384
-# temperature = 1.0
-# top_p = 1.0
-# frequency_penalty = 0.0
-# presence_penalty = 0.0
+max_completion_tokens = 16384
+temperature = 1.0
+top_p = 1.0
+frequency_penalty = 0.0
+presence_penalty = 0.0
 
 [[models]]
 id = "gpt-4o-mini"
 name = "GPT-4o mini"
-# max_completion_tokens = 16384
-# temperature = 1.0
-# top_p = 1.0
-# frequency_penalty = 0.0
-# presence_penalty = 0.0
+max_completion_tokens = 16384
+temperature = 1.0
+top_p = 1.0
+frequency_penalty = 0.0
+presence_penalty = 0.0
