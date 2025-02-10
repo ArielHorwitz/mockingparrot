@@ -78,7 +78,9 @@ pub fn cycle_unsigned(current: usize, total: usize, subtract: bool) -> anyhow::R
     };
     let bounded = new.checked_rem(total).context("remainder from total")?;
     let positive = if bounded < 0 {
-        bounded.checked_add(total).context("add total to negative")?
+        bounded
+            .checked_add(total)
+            .context("add total to negative")?
     } else {
         bounded
     };
