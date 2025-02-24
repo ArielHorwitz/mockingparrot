@@ -16,8 +16,8 @@ pub struct Config {
 pub struct Model {
     pub id: String,
     pub name: String,
-    pub max_tokens: Option<u32>,
-    pub temperature: Option<f32>,
+    pub max_tokens: u32,
+    pub temperature: f32,
 }
 
 impl std::fmt::Display for Model {
@@ -30,8 +30,8 @@ impl std::fmt::Display for Model {
 struct Request {
     messages: Vec<Message>,
     model: String,
-    max_tokens: Option<u32>,
-    temperature: Option<f32>,
+    max_tokens: u32,
+    temperature: f32,
     system: String,
 }
 

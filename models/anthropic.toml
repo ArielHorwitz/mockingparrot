@@ -3,5 +3,5 @@
 [[models]]
 id = "claude-3-5-sonnet-latest"
 name = "Claude 3.5 Sonnet"
-# max_tokens = 8192
-# temperature = 0.5
+max_tokens = 8192
+temperature = 0.5
