@@ -177,7 +177,7 @@ pub async fn get_completion(
         .message;
     if message.role != Role::Assistant {
         anyhow::bail!("unexpected non-assistant role response");
-    };
+    }
     let generic_message = GenericMessage {
         role: GenericRole::Assistant(model.to_string()),
         content: message.content.clone(),

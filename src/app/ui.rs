@@ -47,7 +47,7 @@ pub fn draw(frame: &mut Frame, state: &mut State) -> Result<()> {
             config::draw(frame, main_layout, state, config_scope).context("draw config")?;
         }
         Scope::Debug => debug::draw(frame, main_layout, state),
-    };
+    }
     Ok(())
 }
 

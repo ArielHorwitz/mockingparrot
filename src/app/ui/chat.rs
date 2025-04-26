@@ -14,7 +14,7 @@ pub fn draw(frame: &mut Frame, rect: Rect, state: &mut State, scope: ChatFocus) 
         ChatFocus::New => new::draw(frame, rect, state),
         ChatFocus::History => history::draw(frame, rect, state),
         ChatFocus::Messages | ChatFocus::Prompt => draw_conversation(frame, rect, state, scope)?,
-    };
+    }
     Ok(())
 }
 

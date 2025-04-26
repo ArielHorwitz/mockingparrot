@@ -15,7 +15,7 @@ pub enum HandleEventResult {
 pub async fn handle(timeout: u64, state: &mut State) -> Result<HandleEventResult> {
     if !event::poll(std::time::Duration::from_millis(timeout)).context("poll terminal events")? {
         return Ok(HandleEventResult::None);
-    };
+    }
     let terminal_event = event::read().context("read terminal event")?;
     match terminal_event {
         Event::Key(key_event) => return handle_keys(key_event, state).await,
@@ -24,7 +24,7 @@ pub async fn handle(timeout: u64, state: &mut State) -> Result<HandleEventResult
         Event::Mouse(ev) => state.add_debug_log(format!("mouse {ev:#?}")),
         Event::Paste(p) => state.add_debug_log(format!("paste {p:#?}")),
         Event::Resize(x, y) => state.add_debug_log(format!("resize {x}x{y}")),
-    };
+    }
     Ok(HandleEventResult::None)
 }
 
@@ -142,7 +142,7 @@ fn handle_conversation(hotkey_action: HotkeyAction, state: &mut State) -> Result
             state.set_status_bar_text("Copied conversation to clipboard");
         }
         _ => (),
-    };
+    }
     Ok(())
 }
 
@@ -200,7 +200,7 @@ fn handle_new_conversation(hotkey_action: HotkeyAction, state: &mut State) {
                 state.conversations.insert(0, new_conversation);
                 state.ui.active_conversation_index = 0;
                 state.ui.focus.chat = ChatFocus::Prompt;
-            };
+            }
         }
         HotkeyAction::SelectionDown => {
             state.ui.system_instruction_selection = state
@@ -269,7 +269,7 @@ fn handle_chat_history(hotkey_action: HotkeyAction, state: &mut State) {
                 .min(max_selection);
         }
         _ => (),
-    };
+    }
 }
 
 fn handle_config(
@@ -289,7 +289,7 @@ fn handle_config(
             state.reload_config()?;
         }
         _ => (),
-    };
+    }
     Ok(HandleEventResult::None)
 }
 

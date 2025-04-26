@@ -148,7 +148,7 @@ pub async fn get_completion(
         .with_context(|| format!("failed to parse response: {raw_response}"))?;
     if parsed_response.role != Role::Assistant {
         anyhow::bail!("unexpected non-assistant role response");
-    };
+    }
     let message_content = &parsed_response
         .content
         .first()
