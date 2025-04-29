@@ -11,10 +11,7 @@ mod config;
 mod debug;
 
 pub fn draw(frame: &mut Frame, state: &mut State) -> Result<()> {
-    frame.render_widget(
-        Block::new().bg(state.config.ui.colors.background.normal),
-        frame.area(),
-    );
+    frame.render_widget(Block::new().style(state.theme.background()), frame.area());
     let layout = Layout::new(
         Direction::Vertical,
         [
@@ -32,9 +29,7 @@ pub fn draw(frame: &mut Frame, state: &mut State) -> Result<()> {
 
     // Status bar
     frame.render_widget(
-        Paragraph::new(state.ui.status_bar_text.as_str())
-            .bg(state.config.ui.colors.background.highlight)
-            .fg(state.config.ui.colors.text.normal),
+        Paragraph::new(state.ui.status_bar_text.as_str()).style(state.theme.text(true)),
         status_bar_layout,
     );
 
@@ -69,7 +64,7 @@ fn draw_title_tabs(
         Block::new()
             .title(crate::APP_TITLE_FULL)
             .title_alignment(ratatui::layout::Alignment::Center)
-            .fg(state.config.ui.colors.text.title)
+            .style(state.theme.title())
             .bold(),
         title_area,
     );
@@ -78,18 +73,15 @@ fn draw_title_tabs(
         crate::app::focus::Tab::Config => 1,
         crate::app::focus::Tab::Debug => 2,
     };
+    let divider = ratatui::text::Span::styled(ratatui::symbols::DOT, state.theme.text(false));
     let tabs_widget = ratatui::widgets::Tabs::new(vec!["Chat", "Config", "Debug"])
-        .style(ratatui::style::Style::default().fg(state.config.ui.colors.frame.inactive))
-        .highlight_style(
-            ratatui::style::Style::default()
-                .fg(state.config.ui.colors.frame.normal)
-                .bold(),
-        )
-        .divider(ratatui::symbols::DOT.fg(state.config.ui.colors.text.inactive))
+        .style(state.theme.tab(false))
+        .highlight_style(state.theme.tab(true).bold())
+        .divider(divider)
         .select(selected_tab_index);
     let tabs_block = ratatui::widgets::Block::new()
         .borders(ratatui::widgets::Borders::LEFT)
-        .fg(state.config.ui.colors.frame.inactive);
+        .style(state.theme.tab(false));
     frame.render_widget(&tabs_block, tabs_area);
     frame.render_widget(tabs_widget, tabs_block.inner(tabs_area));
     Ok(())

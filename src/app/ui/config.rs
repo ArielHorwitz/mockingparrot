@@ -2,7 +2,7 @@ use crate::app::focus::Config as ConfigFocus;
 use crate::app::state::State;
 use anyhow::{Context, Result};
 use ratatui::{
-    prelude::{Constraint, Direction, Layout, Rect, Style},
+    prelude::{Constraint, Direction, Layout, Rect},
     widgets::{Block, Borders, Paragraph},
     Frame,
 };
@@ -23,11 +23,11 @@ pub fn draw(
 
     let config_block = Block::new()
         .borders(Borders::ALL)
-        .border_style(state.config.ui.colors.frame.normal)
+        .border_style(state.theme.frame(true))
         .title("Configuration")
-        .title_style(state.config.ui.colors.frame.title);
+        .title_style(state.theme.title());
 
-    let text_style = Style::new().fg(state.config.ui.colors.text.normal);
+    let text_style = state.theme.text(true);
 
     frame.render_widget(&config_block, *top_layout);
     frame.render_widget(
@@ -45,9 +45,9 @@ pub fn draw(
 
     let config_block = Block::new()
         .borders(Borders::ALL)
-        .border_style(state.config.ui.colors.frame.normal)
+        .border_style(state.theme.frame(true))
         .title(format!("{title} Configuration"))
-        .title_style(state.config.ui.colors.frame.title);
+        .title_style(state.theme.title());
     frame.render_widget(&config_block, *bottom_layout);
     frame.render_widget(
         Paragraph::new(config_details).style(text_style),

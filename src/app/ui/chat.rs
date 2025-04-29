@@ -28,7 +28,7 @@ pub fn draw_conversation(
         Direction::Vertical,
         [
             Constraint::Fill(1),
-            Constraint::Length(state.config.ui.layout.prompt_size.saturating_add(2).max(3)),
+            Constraint::Length(state.config.ui.prompt_size.saturating_add(2).max(3)),
         ],
     )
     .split(rect);
@@ -37,7 +37,7 @@ pub fn draw_conversation(
     draw_conversation_prompt(frame, prompt_layout, state, scope);
     // Styles
     let is_focused = scope == ChatFocus::Messages;
-    let text_color = state.config.ui.colors.text.get_active(is_focused);
+    let text_style = state.theme.text(is_focused);
 
     // Conversation display
     let config_file_str = state.paths.get_config_file().display().to_string();
@@ -47,35 +47,30 @@ pub fn draw_conversation(
     };
     let convo = if missing_api_key {
         Text::from_iter([
-            "Missing API key"
-                .fg(state.config.ui.colors.text.warn)
-                .into(),
+            Line::styled("Missing API key", state.theme.text_warn()),
             Line::default(),
-            "Enter your API key in your config file to start chatting:"
-                .fg(text_color)
-                .into(),
-            config_file_str
-                .fg(state.config.ui.colors.text.highlight)
-                .into(),
+            Line::styled(
+                "Enter your API key in your config file to start chatting:",
+                state.theme.text(is_focused),
+            ),
+            Line::styled(config_file_str, state.theme.text(true)),
         ])
     } else {
         let active_conversation = &state.get_active_conversation()?;
-        let mut lines: Vec<Line> = vec!["System"
-            .fg(state.config.ui.colors.text.highlight)
-            .underlined()
-            .into()];
+        let mut lines: Vec<Line> = vec![Line::styled(
+            "System",
+            state.theme.name(is_focused).underlined(),
+        )];
         for line in active_conversation.system_instructions.lines() {
-            lines.push(line.to_owned().fg(text_color).into());
+            lines.push(Line::styled(line.to_owned(), text_style));
         }
         for message in &state.get_active_conversation()?.messages {
-            lines.push(
-                format!("{}:", message.role)
-                    .to_string()
-                    .fg(state.config.ui.colors.text.highlight)
-                    .into(),
-            );
+            lines.push(Line::styled(
+                format!("{}:", message.role),
+                state.theme.name(is_focused),
+            ));
             for line in message.content.lines() {
-                lines.push(line.to_owned().fg(text_color).into());
+                lines.push(Line::styled(line.to_owned(), text_style));
             }
         }
         Text::from_iter(lines)
@@ -83,9 +78,9 @@ pub fn draw_conversation(
 
     let block = Block::new()
         .borders(Borders::ALL)
-        .fg(state.config.ui.colors.frame.get_active(is_focused))
+        .border_style(state.theme.frame(is_focused))
         .title("Conversation")
-        .title_style(Style::new().fg(state.config.ui.colors.frame.title));
+        .title_style(state.theme.title());
     let convo_text = Paragraph::new(convo)
         .wrap(Wrap { trim: false })
         .block(block);
@@ -95,8 +90,8 @@ pub fn draw_conversation(
         .unwrap_or(u16::MAX)
         .saturating_sub(3);
     state.ui.conversation_scroll = state.ui.conversation_scroll.min(max_scroll);
-    let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
-        .style(Style::new().fg(state.config.ui.colors.widget.get_active(is_focused)));
+    let scrollbar =
+        Scrollbar::new(ScrollbarOrientation::VerticalRight).style(state.theme.frame(is_focused));
     let mut scrollbar_state =
         ScrollbarState::new(max_scroll.into()).position(state.ui.conversation_scroll.into());
     let scrollbar_area = convo_layout.inner(ratatui::layout::Margin {
@@ -114,19 +109,17 @@ pub fn draw_conversation(
 
 fn draw_conversation_prompt(frame: &mut Frame, rect: Rect, state: &mut State, scope: ChatFocus) {
     let is_focused = scope == ChatFocus::Prompt;
-    let cursor_style = Style::new().bg(state.config.ui.colors.cursor.get_active(is_focused));
-    let text_style = Style::new().fg(state.config.ui.colors.text.get_active(is_focused));
-    let frame_style = Style::new().fg(state.config.ui.colors.frame.get_active(is_focused));
-    let frame_title_style = Style::new().fg(state.config.ui.colors.frame.title);
+    let text_style = state.theme.text(is_focused);
+    let cursor_style = state.theme.cursor(is_focused);
 
     state.ui.prompt_textarea.set_cursor_line_style(Style::new());
     state.ui.prompt_textarea.set_cursor_style(cursor_style);
     state.ui.prompt_textarea.set_style(text_style);
     let block = Block::new()
         .borders(Borders::ALL)
-        .style(frame_style)
+        .style(state.theme.frame(is_focused))
         .title("Prompt")
-        .title_style(frame_title_style);
+        .title_style(state.theme.title());
     let inner = block.inner(rect);
     frame.render_widget(block, rect);
     frame.render_widget(&state.ui.prompt_textarea, inner);

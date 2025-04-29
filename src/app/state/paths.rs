@@ -38,6 +38,11 @@ impl Paths {
     }
 
     #[must_use]
+    pub fn get_theme_file(&self) -> PathBuf {
+        self.config_dir.join("theme.toml")
+    }
+
+    #[must_use]
     pub fn get_message_file(&self) -> PathBuf {
         self.data_dir.join("message_text")
     }

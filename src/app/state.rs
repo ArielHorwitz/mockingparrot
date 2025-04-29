@@ -1,7 +1,7 @@
 use crate::{
     app::hotkeys,
     chat::Conversation,
-    config::{Config, Models},
+    config::{Config, Models, Theme},
 };
 use anyhow::{Context, Result};
 use std::io::Write;
@@ -15,6 +15,7 @@ pub use paths::Paths;
 pub struct State {
     pub config: Config,
     pub models: Models,
+    pub theme: Theme,
     pub hotkey_map: hotkeys::HotkeyMap,
     pub paths: Paths,
     pub conversations: Vec<Conversation>,
@@ -27,6 +28,8 @@ impl State {
         let config =
             Config::from_file(&paths.get_config_file(), true).context("get config from disk")?;
         let models = Models::from_disk(&paths.models_dir, true).context("get models from disk")?;
+        Theme::generate_default(&paths.get_theme_file()).context("generate default theme")?;
+        let theme = Theme::from_disk(&paths.get_theme_file()).context("get theme from disk")?;
         let hotkey_map = hotkeys::get_hotkey_config(config.hotkeys.clone());
         let system_instructions = config
             .system
@@ -43,6 +46,7 @@ impl State {
         let mut state = Self {
             config,
             models,
+            theme,
             hotkey_map,
             paths,
             conversations,
@@ -60,6 +64,8 @@ impl State {
         self.config = Config::from_file(&self.paths.get_config_file(), false)
             .context("get config from file")?;
         self.hotkey_map = hotkeys::get_hotkey_config(self.config.hotkeys.clone());
+        self.theme =
+            Theme::from_disk(&self.paths.get_theme_file()).context("reload theme from file")?;
         self.set_status_bar_text(format!(
             "Reloaded config file: {}",
             self.paths.get_config_file().display()

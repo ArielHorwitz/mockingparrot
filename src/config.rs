@@ -6,9 +6,10 @@ use std::path::Path;
 
 mod models;
 mod system;
-mod ui;
+pub mod theme;
 
 pub use models::Models;
+pub use theme::Theme;
 
 const CONFIG_TEMPLATE: &str = include_str!("../templates/config.toml");
 
@@ -16,7 +17,7 @@ const CONFIG_TEMPLATE: &str = include_str!("../templates/config.toml");
 pub struct Config {
     pub provider: Provider,
     pub keys: ApiKeys,
-    pub ui: ui::Ui,
+    pub ui: Ui,
     pub commands: Commands,
     pub system: system::System,
     pub hotkeys: HotkeyConfig,
@@ -46,6 +47,11 @@ pub struct ApiKeys {
 pub struct Commands {
     pub editor: Vec<String>,
     pub copy: Vec<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Ui {
+    pub prompt_size: u16,
 }
 
 #[cfg(test)]
