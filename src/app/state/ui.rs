@@ -18,14 +18,14 @@ impl Ui {
     pub fn with_provider(provider: crate::api::Provider) -> Self {
         Ui {
             focus: Focus::with_provider(provider),
-            status_bar_text: String::default(),
+            status_bar_text: String::new(),
             prompt_textarea: TextArea::default(),
-            conversation_scroll: Default::default(),
-            debug_logs: Vec::default(),
-            debug_logs_scroll: Default::default(),
-            active_conversation_index: Default::default(),
+            conversation_scroll: 0,
+            debug_logs: Vec::new(),
+            debug_logs_scroll: 0,
+            active_conversation_index: 0,
             selected_message_index: None,
-            system_instruction_selection: Default::default(),
+            system_instruction_selection: 0,
         }
     }
 }

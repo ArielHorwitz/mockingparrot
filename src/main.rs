@@ -35,6 +35,6 @@ async fn run_app(terminal: &mut Terminal<impl Backend>, mut state: State) -> Res
             events::HandleEventResult::Redraw => terminal.clear().context("clear terminal")?,
             events::HandleEventResult::Quit => return Ok(()),
         }
-        state.fix_clamp_ui_selections();
+        state.ui_clamp().context("ui clamp")?;
     }
 }

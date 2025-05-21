@@ -85,10 +85,17 @@ impl State {
         Ok(())
     }
 
-    pub fn fix_clamp_ui_selections(&mut self) {
+    pub fn ui_clamp(&mut self) -> Result<()> {
         if self.ui.active_conversation_index >= self.conversations.len() {
             self.ui.active_conversation_index = self.conversations.len() - 1;
         }
+        if let Some(selected_index) = self.ui.selected_message_index {
+            let message_count = self.get_active_conversation()?.messages.len();
+            if selected_index >= message_count {
+                self.ui.selected_message_index = Some(message_count - 1);
+            }
+        }
+        Ok(())
     }
 
     pub fn get_active_conversation(&self) -> Result<&Conversation> {
@@ -103,14 +110,14 @@ impl State {
             .context("active conversation index out of bounds")
     }
 
-    pub fn set_status_bar_text<T: Into<String>>(&mut self, text: T) {
+    pub fn set_status_bar_text(&mut self, text: impl Into<String>) {
         self.ui.status_bar_text = text.into();
     }
 
-    pub fn add_debug_log<T: Into<String>>(&mut self, log: T) {
+    pub fn add_debug_log(&mut self, message: impl std::fmt::Display) {
         self.ui
             .debug_logs
-            .push(format!("{} | {}", crate::get_timestamp(), log.into()));
+            .push(format!("{} | {message}", crate::get_timestamp()));
     }
 
     pub fn save_conversations_to_disk(&self) -> Result<()> {
