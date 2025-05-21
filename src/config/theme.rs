@@ -61,6 +61,7 @@ impl ColorMod {
 #[derive(Debug, Deserialize, Clone)]
 pub struct Theme {
     background: ColorMod,
+    background_highlighted: ColorMod,
     text: ColorMod,
     text_inactive: ColorMod,
     text_warn: ColorMod,
@@ -80,8 +81,11 @@ pub struct Theme {
 #[allow(clippy::match_bool)]
 impl Theme {
     #[must_use]
-    pub fn background(&self) -> Style {
-        self.background.as_bg()
+    pub fn background(&self, highlight: bool) -> Style {
+        match highlight {
+            true => self.background_highlighted.as_bg(),
+            false => self.background.as_bg(),
+        }
     }
 
     #[must_use]

@@ -100,8 +100,7 @@ async fn handle_chat(
             handle_conversation(hotkey_action, state).context("handle conversation message")?;
         }
         (ChatFocus::Prompt, _) => {
-            handle_conversation_prompt(hotkey_action_option, key_event, state)
-                .context("handle conversation prompt")?;
+            handle_conversation_prompt(hotkey_action_option, key_event, state);
         }
         _ => (),
     }
@@ -113,11 +112,38 @@ fn handle_conversation(hotkey_action: HotkeyAction, state: &mut State) -> Result
         HotkeyAction::Select => {
             state.ui.focus.chat = ChatFocus::Prompt;
         }
+        HotkeyAction::Cancel => {
+            state.ui.selected_message_index = None;
+        }
         HotkeyAction::SelectionUp => {
             state.ui.conversation_scroll = state.ui.conversation_scroll.saturating_sub(1);
         }
         HotkeyAction::SelectionDown => {
             state.ui.conversation_scroll = state.ui.conversation_scroll.saturating_add(1);
+        }
+        HotkeyAction::SelectionPrevious => {
+            let last_message_index = state
+                .get_active_conversation()?
+                .messages
+                .len()
+                .saturating_sub(1);
+            if let Some(i) = &mut state.ui.selected_message_index {
+                *i = i.saturating_sub(1);
+            } else {
+                state.ui.selected_message_index = Some(last_message_index);
+            }
+        }
+        HotkeyAction::SelectionNext => {
+            let last_message_index = state
+                .get_active_conversation()?
+                .messages
+                .len()
+                .saturating_sub(1);
+            if let Some(i) = &mut state.ui.selected_message_index {
+                *i = i.saturating_add(1).min(last_message_index);
+            } else {
+                state.ui.selected_message_index = Some(0);
+            }
         }
         HotkeyAction::ScrollUp => {
             state.ui.conversation_scroll = state.ui.conversation_scroll.saturating_sub(10);
@@ -132,14 +158,28 @@ fn handle_conversation(hotkey_action: HotkeyAction, state: &mut State) -> Result
             state.ui.conversation_scroll = u16::MAX;
         }
         HotkeyAction::Copy => {
-            let text = state
+            let convo = state
                 .get_active_conversation()
-                .context("get active conversation")?
-                .to_string();
+                .context("get active conversation")?;
+            let text = if let Some(selected_index) = state.ui.selected_message_index {
+                convo
+                    .messages
+                    .get(selected_index)
+                    .context("selected index out of range")?
+                    .content
+                    .to_string()
+            } else {
+                convo.to_string()
+            };
             actions::export_to_clipboard(state, &text)
                 .context("export conversation to clipboard")?;
-            state.add_debug_log("Copied conversation to clipboard");
-            state.set_status_bar_text("Copied conversation to clipboard");
+            if state.ui.selected_message_index.is_some() {
+                state.add_debug_log("Copied message to clipboard");
+                state.set_status_bar_text("Copied message to clipboard");
+            } else {
+                state.add_debug_log("Copied conversation to clipboard");
+                state.set_status_bar_text("Copied conversation to clipboard");
+            }
         }
         _ => (),
     }
@@ -150,7 +190,7 @@ fn handle_conversation_prompt(
     hotkey_action_option: Option<HotkeyAction>,
     key_event: KeyEvent,
     state: &mut State,
-) -> Result<()> {
+) {
     match hotkey_action_option {
         Some(HotkeyAction::Cancel) => {
             state.ui.focus.chat = ChatFocus::Messages;
@@ -159,23 +199,10 @@ fn handle_conversation_prompt(
             state.ui.prompt_textarea.select_all();
             state.ui.prompt_textarea.cut();
         }
-        Some(HotkeyAction::Copy) => {
-            let last_message = state
-                .get_active_conversation()
-                .context("get active conversation")?
-                .messages
-                .last()
-                .context("get last message")?;
-            actions::export_to_clipboard(state, &last_message.content)
-                .context("export last message to clipboard")?;
-            state.add_debug_log("Copied last message to clipboard");
-            state.set_status_bar_text("Copied last message to clipboard");
-        }
         _ => {
             state.ui.prompt_textarea.input(key_event);
         }
     }
-    Ok(())
 }
 
 fn handle_new_conversation(hotkey_action: HotkeyAction, state: &mut State) {
@@ -243,6 +270,7 @@ fn handle_chat_history(hotkey_action: HotkeyAction, state: &mut State) {
         HotkeyAction::SelectionUp => {
             state.ui.active_conversation_index =
                 state.ui.active_conversation_index.saturating_sub(1);
+            state.ui.selected_message_index = None;
         }
         HotkeyAction::SelectionDown => {
             state.ui.active_conversation_index = state
@@ -250,16 +278,20 @@ fn handle_chat_history(hotkey_action: HotkeyAction, state: &mut State) {
                 .active_conversation_index
                 .saturating_add(1)
                 .min(max_selection);
+            state.ui.selected_message_index = None;
         }
         HotkeyAction::SelectionStart => {
             state.ui.active_conversation_index = 0;
+            state.ui.selected_message_index = None;
         }
         HotkeyAction::SelectionEnd => {
             state.ui.active_conversation_index = max_selection;
+            state.ui.selected_message_index = None;
         }
         HotkeyAction::ScrollUp => {
             state.ui.active_conversation_index =
                 state.ui.active_conversation_index.saturating_sub(10);
+            state.ui.selected_message_index = None;
         }
         HotkeyAction::ScrollDown => {
             state.ui.active_conversation_index = state
@@ -267,6 +299,7 @@ fn handle_chat_history(hotkey_action: HotkeyAction, state: &mut State) {
                 .active_conversation_index
                 .saturating_add(10)
                 .min(max_selection);
+            state.ui.selected_message_index = None;
         }
         _ => (),
     }

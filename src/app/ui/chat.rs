@@ -64,13 +64,16 @@ pub fn draw_conversation(
         for line in active_conversation.system_instructions.lines() {
             lines.push(Line::styled(line.to_owned(), text_style));
         }
-        for message in &state.get_active_conversation()?.messages {
+        for (i, message) in state.get_active_conversation()?.messages.iter().enumerate() {
+            let is_selected = state.ui.selected_message_index == Some(i);
+            let bg_theme = state.theme.background(is_selected);
             lines.push(Line::styled(
                 format!("{}:", message.role),
                 state.theme.name(is_focused),
             ));
+            let line_style = text_style.patch(bg_theme);
             for line in message.content.lines() {
-                lines.push(Line::styled(line.to_owned(), text_style));
+                lines.push(Line::styled(line.to_owned(), line_style));
             }
         }
         Text::from_iter(lines)

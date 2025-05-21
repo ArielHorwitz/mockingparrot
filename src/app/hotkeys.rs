@@ -25,6 +25,8 @@ pub enum HotkeyAction {
     SelectionDown,
     SelectionStart,
     SelectionEnd,
+    SelectionPrevious,
+    SelectionNext,
     ScrollUp,
     ScrollDown,
     Increment,

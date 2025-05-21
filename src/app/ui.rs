@@ -11,7 +11,10 @@ mod config;
 mod debug;
 
 pub fn draw(frame: &mut Frame, state: &mut State) -> Result<()> {
-    frame.render_widget(Block::new().style(state.theme.background()), frame.area());
+    frame.render_widget(
+        Block::new().style(state.theme.background(false)),
+        frame.area(),
+    );
     let layout = Layout::new(
         Direction::Vertical,
         [

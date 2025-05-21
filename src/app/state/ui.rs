@@ -9,6 +9,7 @@ pub struct Ui {
     pub debug_logs: Vec<String>,
     pub debug_logs_scroll: u16,
     pub active_conversation_index: usize,
+    pub selected_message_index: Option<usize>,
     pub system_instruction_selection: usize,
 }
 
@@ -23,6 +24,7 @@ impl Ui {
             debug_logs: Vec::default(),
             debug_logs_scroll: Default::default(),
             active_conversation_index: Default::default(),
+            selected_message_index: None,
             system_instruction_selection: Default::default(),
         }
     }
