@@ -9,7 +9,6 @@ anthropic = ""
 
 [ui]
 prompt_size = 8
-theme = "default"
 
 [commands]
 editor = ["gedit", "--standalone"]
