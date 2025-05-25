@@ -16,7 +16,7 @@ try_command() {
     fi
 }
 
-EXPECTED_CARGO_VERSION="1.86.0"
+EXPECTED_CARGO_VERSION="1.87.0"
 actual_cargo_version=$(cargo --version | awk '{print $2}')
 if [[ "$actual_cargo_version" != "$EXPECTED_CARGO_VERSION" ]]; then
     printerr "Unexpected cargo version"
