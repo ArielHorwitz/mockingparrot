@@ -37,6 +37,17 @@ impl Config {
     }
 }
 
+impl std::fmt::Debug for Config {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Config")
+            .field("ui", &self.ui)
+            .field("commands", &self.commands)
+            .field("hotkeys", &self.hotkeys)
+            .field("system", &self.system)
+            .finish_non_exhaustive()
+    }
+}
+
 #[derive(Debug, Deserialize)]
 pub struct ApiKeys {
     pub openai: String,
