@@ -8,7 +8,7 @@ mod models;
 mod system;
 pub mod theme;
 
-pub use models::Models;
+pub use models::{get_models_file, Models};
 pub use theme::Theme;
 
 const CONFIG_TEMPLATE: &str = include_str!("../templates/config.toml");

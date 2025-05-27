@@ -39,6 +39,16 @@ pub fn edit_config_file_in_editor(state: &State) -> Result<()> {
     Ok(())
 }
 
+pub fn edit_models_file_in_editor(state: &State) -> Result<()> {
+    let mut editor_command_iter = state.config.commands.editor.iter();
+    Command::new(editor_command_iter.next().context("editor command empty")?)
+        .args(editor_command_iter.collect::<Vec<&String>>())
+        .arg(state.get_models_file())
+        .status()
+        .context("run editor")?;
+    Ok(())
+}
+
 pub async fn do_prompt(state: &mut State) -> Result<()> {
     let raw_response = get_completion(state, state.get_active_conversation()?).await;
     match raw_response {

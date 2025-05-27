@@ -1,7 +1,7 @@
 use crate::api::Provider;
 use anyhow::{Context, Result};
 use serde::Deserialize;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 const OPENAI_MODELS_TEMPLATE: &str = include_str!("../../templates/models/openai.toml");
 const ANTHROPIC_MODELS_TEMPLATE: &str = include_str!("../../templates/models/anthropic.toml");
@@ -14,8 +14,8 @@ pub struct Models {
 
 impl Models {
     pub fn from_disk(models_dir: &Path, generate_missing: bool) -> Result<Self> {
-        let openai_models_file = models_dir.join(format!("{}.toml", Provider::OpenAi));
-        let anthropic_models_file = models_dir.join(format!("{}.toml", Provider::Anthropic));
+        let openai_models_file = get_models_file(models_dir, Provider::OpenAi);
+        let anthropic_models_file = get_models_file(models_dir, Provider::Anthropic);
         let openai = get_openai_models_from_file(&openai_models_file, generate_missing)?;
         let anthropic = get_anthropic_models_from_file(&anthropic_models_file, generate_missing)?;
         Ok(Self { openai, anthropic })
@@ -30,6 +30,11 @@ struct OpenAi {
 #[derive(Deserialize)]
 struct Anthropic {
     pub models: Vec<crate::api::anthropic::Model>,
+}
+
+#[must_use]
+pub fn get_models_file(models_dir: &Path, provider: Provider) -> PathBuf {
+    models_dir.join(format!("{provider}.toml"))
 }
 
 fn get_openai_models_from_file(

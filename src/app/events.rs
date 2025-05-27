@@ -319,6 +319,7 @@ fn handle_config(hotkey_action: HotkeyAction, state: &mut State) -> Result<Handl
         HotkeyAction::Refresh => {
             state.reload_models()?;
             state.reload_config()?;
+            return Ok(HandleEventResult::Redraw);
         }
         _ => (),
     }
@@ -327,6 +328,16 @@ fn handle_config(hotkey_action: HotkeyAction, state: &mut State) -> Result<Handl
 
 fn handle_models(hotkey_action: HotkeyAction, state: &mut State) -> Result<HandleEventResult> {
     match hotkey_action {
+        HotkeyAction::Cancel => state.ui.focus.set_tab(TabFocus::Chat),
+        HotkeyAction::Edit => {
+            actions::edit_models_file_in_editor(state)?;
+            state.reload_models()?;
+            return Ok(HandleEventResult::Redraw);
+        }
+        HotkeyAction::Refresh => {
+            state.reload_models()?;
+            return Ok(HandleEventResult::Redraw);
+        }
         HotkeyAction::SelectionNext => {
             state.ui.selected_model = state.ui.selected_model.next_provider();
         }

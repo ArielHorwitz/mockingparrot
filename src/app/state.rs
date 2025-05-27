@@ -1,7 +1,7 @@
 use crate::{
     app::hotkeys,
     chat::Conversation,
-    config::{Config, Models, Theme},
+    config::{get_models_file, Config, Models, Theme},
 };
 use anyhow::{Context, Result};
 use std::io::Write;
@@ -139,6 +139,10 @@ impl State {
             SelectedModel::OpenAi(_) => self.models.openai.len(),
             SelectedModel::Anthropic(_) => self.models.anthropic.len(),
         }
+    }
+
+    pub fn get_models_file(&self) -> PathBuf {
+        get_models_file(&self.paths.models_dir, self.ui.selected_model.into())
     }
 
     pub fn set_status_bar_text(&mut self, text: impl Into<String>) {
