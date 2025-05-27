@@ -1,4 +1,5 @@
 use crate::app::focus::Focus;
+use crate::app::state::SelectedModel;
 use tui_textarea::TextArea;
 
 pub struct Ui {
@@ -11,13 +12,14 @@ pub struct Ui {
     pub active_conversation_index: usize,
     pub selected_message_index: Option<usize>,
     pub system_instruction_selection: usize,
+    pub selected_model: SelectedModel,
 }
 
 impl Ui {
     #[must_use]
     pub fn with_provider(provider: crate::api::Provider) -> Self {
         Ui {
-            focus: Focus::with_provider(provider),
+            focus: Focus::default(),
             status_bar_text: String::new(),
             prompt_textarea: TextArea::default(),
             conversation_scroll: 0,
@@ -26,6 +28,7 @@ impl Ui {
             active_conversation_index: 0,
             selected_message_index: None,
             system_instruction_selection: 0,
+            selected_model: SelectedModel::from(provider),
         }
     }
 }

@@ -1,4 +1,3 @@
-use crate::app::focus::Config as ConfigFocus;
 use crate::app::state::State;
 use anyhow::{Context, Result};
 use ratatui::{
@@ -7,51 +6,43 @@ use ratatui::{
     Frame,
 };
 
-pub fn draw(
-    frame: &mut Frame,
-    rect: Rect,
-    state: &mut State,
-    config_scope: ConfigFocus,
-) -> Result<()> {
+pub fn draw(frame: &mut Frame, rect: Rect, state: &mut State) -> Result<()> {
     let outer_layout = Layout::new(
         Direction::Vertical,
         [Constraint::Length(3), Constraint::Fill(1)],
     )
     .split(rect);
-    let top_layout = outer_layout.first().context("ui index")?;
-    let bottom_layout = outer_layout.get(1).context("ui index")?;
+    let filepath_layout = outer_layout.first().context("ui index")?;
+    let display_layout = outer_layout.get(1).context("ui index")?;
+
+    let config_block = Block::new()
+        .borders(Borders::ALL)
+        .border_style(state.theme.frame(true))
+        .title("Configuration file")
+        .title_style(state.theme.title());
+
+    let text_style = state.theme.text(true);
+
+    frame.render_widget(&config_block, *filepath_layout);
+    frame.render_widget(
+        Paragraph::new(format!(
+            "Config file: {}",
+            state.paths.get_config_file().display(),
+        ))
+        .style(text_style),
+        config_block.inner(*filepath_layout),
+    );
 
     let config_block = Block::new()
         .borders(Borders::ALL)
         .border_style(state.theme.frame(true))
         .title("Configuration")
         .title_style(state.theme.title());
-
-    let text_style = state.theme.text(true);
-
-    frame.render_widget(&config_block, *top_layout);
+    frame.render_widget(&config_block, *display_layout);
     frame.render_widget(
-        Paragraph::new(format!(
-            "Config file: {}",
-            state.paths.get_config_file().display()
-        ))
-        .style(text_style),
-        config_block.inner(*top_layout),
+        Paragraph::new(format!("{:#?}", state.config)).style(text_style),
+        config_block.inner(*display_layout),
     );
-    let (title, config_details) = match config_scope {
-        ConfigFocus::OpenAi => ("OpenAI", format!("{:#?}", state.models.openai)),
-        ConfigFocus::Anthropic => ("Anthropic", format!("{:#?}", state.models.anthropic)),
-    };
 
-    let config_block = Block::new()
-        .borders(Borders::ALL)
-        .border_style(state.theme.frame(true))
-        .title(format!("{title} Configuration"))
-        .title_style(state.theme.title());
-    frame.render_widget(&config_block, *bottom_layout);
-    frame.render_widget(
-        Paragraph::new(config_details).style(text_style),
-        config_block.inner(*bottom_layout),
-    );
     Ok(())
 }

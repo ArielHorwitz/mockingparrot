@@ -9,6 +9,7 @@ use ratatui::{
 mod chat;
 mod config;
 mod debug;
+mod models;
 
 pub fn draw(frame: &mut Frame, state: &mut State) -> Result<()> {
     frame.render_widget(
@@ -41,8 +42,11 @@ pub fn draw(frame: &mut Frame, state: &mut State) -> Result<()> {
         Scope::Chat(chat_scope) => {
             chat::draw(frame, main_layout, state, chat_scope).context("draw chat tab")?;
         }
-        Scope::Config(config_scope) => {
-            config::draw(frame, main_layout, state, config_scope).context("draw config")?;
+        Scope::Models => {
+            models::draw(frame, main_layout, state).context("draw models")?;
+        }
+        Scope::Config => {
+            config::draw(frame, main_layout, state).context("draw config")?;
         }
         Scope::Debug => debug::draw(frame, main_layout, state),
     }
@@ -73,11 +77,12 @@ fn draw_title_tabs(
     );
     let selected_tab_index = match state.ui.focus.tab {
         crate::app::focus::Tab::Chat => 0,
-        crate::app::focus::Tab::Config => 1,
-        crate::app::focus::Tab::Debug => 2,
+        crate::app::focus::Tab::Models => 1,
+        crate::app::focus::Tab::Config => 2,
+        crate::app::focus::Tab::Debug => 3,
     };
     let divider = ratatui::text::Span::styled(ratatui::symbols::DOT, state.theme.text(false));
-    let tabs_widget = ratatui::widgets::Tabs::new(vec!["Chat", "Config", "Debug"])
+    let tabs_widget = ratatui::widgets::Tabs::new(vec!["Chat", "Models", "Config", "Debug"])
         .style(state.theme.tab(false))
         .highlight_style(state.theme.tab(true).bold())
         .divider(divider)

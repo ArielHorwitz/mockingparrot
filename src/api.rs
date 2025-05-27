@@ -46,23 +46,23 @@ pub async fn get_completion(
     state: &State,
     conversation: &Conversation,
 ) -> Result<CompletionResponse> {
-    match state.config.provider {
-        Provider::OpenAi => {
+    match state.ui.selected_model {
+        crate::app::state::SelectedModel::OpenAi(model_index) => {
             let model = state
                 .models
                 .openai
-                .first()
-                .context("no models configured for OpenAI")?;
+                .get(model_index)
+                .context("model index out of range")?;
             openai::get_completion(&state.config.keys.openai, model, conversation)
                 .await
                 .context("get openai completion")
         }
-        Provider::Anthropic => {
+        crate::app::state::SelectedModel::Anthropic(model_index) => {
             let model = state
                 .models
                 .anthropic
-                .first()
-                .context("no models configured for Anthropic")?;
+                .get(model_index)
+                .context("model index out of range")?;
             anthropic::get_completion(&state.config.keys.anthropic, model, conversation)
                 .await
                 .context("get anthropic completion")

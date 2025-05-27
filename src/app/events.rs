@@ -1,5 +1,5 @@
 use crate::app::actions;
-use crate::app::focus::{Chat as ChatFocus, Config as ConfigFocus, Scope, Tab as TabFocus};
+use crate::app::focus::{Chat as ChatFocus, Scope, Tab as TabFocus};
 use crate::app::hotkeys::HotkeyAction;
 use crate::app::state::State;
 use crate::chat::{Conversation, Message};
@@ -43,8 +43,11 @@ async fn handle_keys(key_event: KeyEvent, state: &mut State) -> Result<HandleEve
         (Scope::Chat(chat_focus), hotkey_action_option) => {
             return handle_chat(hotkey_action_option, state, chat_focus, key_event).await;
         }
-        (Scope::Config(config_focus), Some(hotkey_action)) => {
-            return handle_config(hotkey_action, config_focus, state);
+        (Scope::Config, Some(hotkey_action)) => {
+            return handle_config(hotkey_action, state);
+        }
+        (Scope::Models, Some(hotkey_action)) => {
+            return handle_models(hotkey_action, state);
         }
         (Scope::Debug, Some(hotkey_action)) => handle_debug(hotkey_action, state),
         _ => (),
@@ -305,21 +308,36 @@ fn handle_chat_history(hotkey_action: HotkeyAction, state: &mut State) {
     }
 }
 
-fn handle_config(
-    hotkey_action: HotkeyAction,
-    config_focus: ConfigFocus,
-    state: &mut State,
-) -> Result<HandleEventResult> {
-    match (hotkey_action, config_focus) {
-        (HotkeyAction::Cancel, _) => state.ui.focus.set_tab(TabFocus::Chat),
-        (HotkeyAction::Edit, _) => {
+fn handle_config(hotkey_action: HotkeyAction, state: &mut State) -> Result<HandleEventResult> {
+    match hotkey_action {
+        HotkeyAction::Cancel => state.ui.focus.set_tab(TabFocus::Chat),
+        HotkeyAction::Edit => {
             actions::edit_config_file_in_editor(state)?;
             state.reload_config()?;
             return Ok(HandleEventResult::Redraw);
         }
-        (HotkeyAction::Refresh, _) => {
+        HotkeyAction::Refresh => {
             state.reload_models()?;
             state.reload_config()?;
+        }
+        _ => (),
+    }
+    Ok(HandleEventResult::None)
+}
+
+fn handle_models(hotkey_action: HotkeyAction, state: &mut State) -> Result<HandleEventResult> {
+    match hotkey_action {
+        HotkeyAction::SelectionNext => {
+            state.ui.selected_model = state.ui.selected_model.next_provider();
+        }
+        HotkeyAction::SelectionPrevious => {
+            state.ui.selected_model = state.ui.selected_model.previous_provider();
+        }
+        HotkeyAction::SelectionDown => {
+            state.select_model(true)?;
+        }
+        HotkeyAction::SelectionUp => {
+            state.select_model(false)?;
         }
         _ => (),
     }

@@ -1,12 +1,10 @@
-use crate::api::Provider;
 use anyhow::Context;
 use strum::{EnumIter, IntoEnumIterator};
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Default, Debug, PartialEq, Clone, Copy)]
 pub struct Focus {
     pub tab: Tab,
     pub chat: Chat,
-    pub config: Config,
 }
 
 impl Focus {
@@ -14,7 +12,8 @@ impl Focus {
     pub fn get_scope(&self) -> Scope {
         match self.tab {
             Tab::Chat => Scope::Chat(self.chat),
-            Tab::Config => Scope::Config(self.config),
+            Tab::Models => Scope::Models,
+            Tab::Config => Scope::Config,
             Tab::Debug => Scope::Debug,
         }
     }
@@ -44,28 +43,6 @@ impl Focus {
         let prev_tab = cycle_unsigned(pos, tabs.len(), true).expect("cycle math");
         self.tab = *tabs.get(prev_tab).expect("get prev tab");
     }
-
-    #[allow(clippy::missing_panics_doc)]
-    pub fn cycle_config_next(&mut self) {
-        let configs = Config::iter().collect::<Vec<_>>();
-        let pos = configs
-            .iter()
-            .position(|x| *x == self.config)
-            .expect("missing in config enum");
-        let next_pos = cycle_unsigned(pos, configs.len(), false).expect("cycle math");
-        self.config = *configs.get(next_pos).expect("get next config");
-    }
-
-    #[allow(clippy::missing_panics_doc)]
-    pub fn cycle_config_prev(&mut self) {
-        let configs = Config::iter().collect::<Vec<_>>();
-        let pos = configs
-            .iter()
-            .position(|x| *x == self.config)
-            .expect("missing in config enum");
-        let prev_pos = cycle_unsigned(pos, configs.len(), true).expect("cycle math");
-        self.config = *configs.get(prev_pos).expect("get prev config");
-    }
 }
 
 pub fn cycle_unsigned(current: usize, total: usize, subtract: bool) -> anyhow::Result<usize> {
@@ -88,51 +65,28 @@ pub fn cycle_unsigned(current: usize, total: usize, subtract: bool) -> anyhow::R
     Ok(final_result)
 }
 
-impl Focus {
-    #[must_use]
-    pub fn with_provider(provider: Provider) -> Self {
-        Self {
-            tab: Tab::Chat,
-            chat: Chat::Messages,
-            config: Config::from_provider(provider),
-        }
-    }
-}
-
-#[derive(Debug, PartialEq, Clone, Copy, EnumIter)]
+#[derive(Default, Debug, PartialEq, Clone, Copy, EnumIter)]
 pub enum Tab {
+    #[default]
     Chat,
+    Models,
     Config,
     Debug,
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Default, Debug, PartialEq, Clone, Copy)]
 pub enum Chat {
+    #[default]
     Messages,
     Prompt,
     New,
     History,
 }
 
-#[derive(Debug, PartialEq, Clone, Copy, EnumIter)]
-pub enum Config {
-    OpenAi,
-    Anthropic,
-}
-
-impl Config {
-    #[must_use]
-    pub fn from_provider(provider: Provider) -> Self {
-        match provider {
-            Provider::OpenAi => Self::OpenAi,
-            Provider::Anthropic => Self::Anthropic,
-        }
-    }
-}
-
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Scope {
     Chat(Chat),
-    Config(Config),
+    Models,
+    Config,
     Debug,
 }

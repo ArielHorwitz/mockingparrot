@@ -7,9 +7,11 @@ use anyhow::{Context, Result};
 use std::io::Write;
 use std::path::PathBuf;
 
+mod model;
 mod paths;
 mod ui;
 
+pub use model::SelectedModel;
 pub use paths::Paths;
 
 pub struct State {
@@ -95,6 +97,11 @@ impl State {
                 self.ui.selected_message_index = Some(message_count - 1);
             }
         }
+        let max_index = self.get_model_count().saturating_sub(1);
+        self.ui.selected_model = match self.ui.selected_model {
+            SelectedModel::OpenAi(i) => SelectedModel::OpenAi(i.min(max_index)),
+            SelectedModel::Anthropic(i) => SelectedModel::Anthropic(i.min(max_index)),
+        };
         Ok(())
     }
 
@@ -108,6 +115,30 @@ impl State {
         self.conversations
             .get_mut(self.ui.active_conversation_index)
             .context("active conversation index out of bounds")
+    }
+
+    pub fn select_model(&mut self, next: bool) -> Result<()> {
+        let current_index = match self.ui.selected_model {
+            SelectedModel::OpenAi(i) | SelectedModel::Anthropic(i) => i,
+        };
+        let max_index = i64::try_from(self.get_model_count())?;
+        let current_index = i64::try_from(current_index)?;
+        #[rustfmt::skip]
+        let increment = if next { 1 } else { -1 };
+        let new_index = (current_index + increment).rem_euclid(max_index);
+        let new_index = usize::try_from(new_index)?;
+        self.ui.selected_model = match self.ui.selected_model {
+            SelectedModel::OpenAi(_) => SelectedModel::OpenAi(new_index),
+            SelectedModel::Anthropic(_) => SelectedModel::Anthropic(new_index),
+        };
+        Ok(())
+    }
+
+    fn get_model_count(&self) -> usize {
+        match self.ui.selected_model {
+            SelectedModel::OpenAi(_) => self.models.openai.len(),
+            SelectedModel::Anthropic(_) => self.models.anthropic.len(),
+        }
     }
 
     pub fn set_status_bar_text(&mut self, text: impl Into<String>) {
