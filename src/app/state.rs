@@ -93,7 +93,7 @@ impl State {
         }
         if let Some(selected_index) = self.ui.selected_message_index {
             let message_count = self.get_active_conversation()?.messages.len();
-            if selected_index >= message_count {
+            if message_count > 0 && selected_index >= message_count {
                 self.ui.selected_message_index = Some(message_count - 1);
             }
         }
