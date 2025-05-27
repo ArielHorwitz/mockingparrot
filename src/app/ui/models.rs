@@ -49,8 +49,12 @@ pub fn draw(frame: &mut Frame, rect: Rect, state: &mut State) -> Result<()> {
         frame.render_widget(&config_block, *layout);
         let mut lines = Vec::new();
         for (index, model) in models.iter().enumerate() {
-            let selected = Some(index) == selection;
-            lines.push(Line::styled(*model, state.theme.name(selected)));
+            let style = if Some(index) == selection {
+                state.theme.name(true)
+            } else {
+                state.theme.text(true)
+            };
+            lines.push(Line::styled(*model, style));
         }
         frame.render_widget(Text::from_iter(lines), config_block.inner(*layout));
     }
