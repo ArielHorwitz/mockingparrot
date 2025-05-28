@@ -2,7 +2,7 @@ use crate::app::actions;
 use crate::app::focus::{Chat as ChatFocus, Scope, Tab as TabFocus};
 use crate::app::hotkeys::HotkeyAction;
 use crate::app::state::State;
-use crate::chat::{Conversation, Message};
+use crate::chat::Message;
 use anyhow::{Context, Result};
 use ratatui::crossterm::event::{self, Event, KeyEvent, KeyEventKind};
 
@@ -77,15 +77,6 @@ async fn handle_chat(
                 .save_conversations_to_disk()
                 .context("save conversations")?;
         }
-        (_, Some(HotkeyAction::Edit)) => {
-            let initial_text = state.ui.prompt_textarea.lines().join("\n");
-            let message_text = actions::get_message_text_from_editor(state, initial_text.as_str())
-                .context("get message text from editor")?;
-            state.ui.prompt_textarea.select_all();
-            state.ui.prompt_textarea.cut();
-            state.ui.prompt_textarea.insert_str(&message_text);
-            return Ok(HandleEventResult::Redraw);
-        }
         (_, Some(HotkeyAction::New)) => {
             state.ui.focus.chat = ChatFocus::New;
         }
@@ -97,13 +88,13 @@ async fn handle_chat(
             handle_new_conversation(hotkey_action, state);
         }
         (ChatFocus::History, Some(hotkey_action)) => {
-            handle_chat_history(hotkey_action, state);
+            return handle_chat_history(hotkey_action, state);
         }
         (ChatFocus::Messages, Some(hotkey_action)) => {
             handle_conversation(hotkey_action, state).context("handle conversation message")?;
         }
         (ChatFocus::Prompt, _) => {
-            handle_conversation_prompt(hotkey_action_option, key_event, state);
+            return handle_conversation_prompt(hotkey_action_option, key_event, state);
         }
         _ => (),
     }
@@ -193,7 +184,7 @@ fn handle_conversation_prompt(
     hotkey_action_option: Option<HotkeyAction>,
     key_event: KeyEvent,
     state: &mut State,
-) {
+) -> Result<HandleEventResult> {
     match hotkey_action_option {
         Some(HotkeyAction::Cancel) => {
             state.ui.focus.chat = ChatFocus::Messages;
@@ -202,36 +193,27 @@ fn handle_conversation_prompt(
             state.ui.prompt_textarea.select_all();
             state.ui.prompt_textarea.cut();
         }
+        Some(HotkeyAction::Edit) => {
+            let initial_text = state.ui.prompt_textarea.lines().join("\n");
+            let message_text = actions::get_message_text_from_editor(state, initial_text.as_str())
+                .context("get message text from editor")?;
+            state.ui.prompt_textarea.select_all();
+            state.ui.prompt_textarea.cut();
+            state.ui.prompt_textarea.insert_str(&message_text);
+            return Ok(HandleEventResult::Redraw);
+        }
         _ => {
             state.ui.prompt_textarea.input(key_event);
         }
     }
+    Ok(HandleEventResult::None)
 }
 
 fn handle_new_conversation(hotkey_action: HotkeyAction, state: &mut State) {
     let max_selection = state.config.system.instructions.len().saturating_sub(1);
     match hotkey_action {
         HotkeyAction::Cancel => state.ui.focus.chat = ChatFocus::Messages,
-        HotkeyAction::Select => {
-            if let Some(system_instructions) = state
-                .config
-                .system
-                .instructions
-                .get(state.ui.system_instruction_selection)
-            {
-                if state
-                    .conversations
-                    .first()
-                    .is_some_and(Conversation::is_empty)
-                {
-                    state.conversations.remove(0);
-                }
-                let new_conversation = Conversation::new(system_instructions.message.clone());
-                state.conversations.insert(0, new_conversation);
-                state.ui.active_conversation_index = 0;
-                state.ui.focus.chat = ChatFocus::Prompt;
-            }
-        }
+        HotkeyAction::Select => state.start_new_conversation(),
         HotkeyAction::SelectionDown => {
             state.ui.system_instruction_selection = state
                 .ui
@@ -264,7 +246,10 @@ fn handle_new_conversation(hotkey_action: HotkeyAction, state: &mut State) {
     }
 }
 
-fn handle_chat_history(hotkey_action: HotkeyAction, state: &mut State) {
+fn handle_chat_history(
+    hotkey_action: HotkeyAction,
+    state: &mut State,
+) -> Result<HandleEventResult> {
     let max_selection = state.conversations.len().saturating_sub(1);
     match hotkey_action {
         HotkeyAction::Cancel | HotkeyAction::Select => {
@@ -304,15 +289,21 @@ fn handle_chat_history(hotkey_action: HotkeyAction, state: &mut State) {
                 .min(max_selection);
             state.ui.selected_message_index = None;
         }
+        HotkeyAction::Edit => {
+            actions::edit_file_in_editor(state, &state.paths.get_conversations_file())?;
+            state.reload_conversations()?;
+            return Ok(HandleEventResult::Redraw);
+        }
         _ => (),
     }
+    Ok(HandleEventResult::None)
 }
 
 fn handle_config(hotkey_action: HotkeyAction, state: &mut State) -> Result<HandleEventResult> {
     match hotkey_action {
         HotkeyAction::Cancel => state.ui.focus.set_tab(TabFocus::Chat),
         HotkeyAction::Edit => {
-            actions::edit_config_file_in_editor(state)?;
+            actions::edit_file_in_editor(state, &state.paths.get_config_file())?;
             state.reload_config()?;
             return Ok(HandleEventResult::Redraw);
         }
@@ -330,7 +321,7 @@ fn handle_models(hotkey_action: HotkeyAction, state: &mut State) -> Result<Handl
     match hotkey_action {
         HotkeyAction::Cancel => state.ui.focus.set_tab(TabFocus::Chat),
         HotkeyAction::Edit => {
-            actions::edit_models_file_in_editor(state)?;
+            actions::edit_file_in_editor(state, &state.get_models_file())?;
             state.reload_models()?;
             return Ok(HandleEventResult::Redraw);
         }

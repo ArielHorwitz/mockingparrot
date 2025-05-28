@@ -176,4 +176,33 @@ impl State {
             Ok(Vec::new())
         }
     }
+
+    pub fn reload_conversations(&mut self) -> Result<()> {
+        self.conversations =
+            Self::load_conversations_from_disk(&self.paths.get_conversations_file())?;
+        self.start_new_conversation();
+        Ok(())
+    }
+
+    pub fn start_new_conversation(&mut self) {
+        let Some(system_instructions) = self
+            .config
+            .system
+            .instructions
+            .get(self.ui.system_instruction_selection)
+        else {
+            return;
+        };
+        if self
+            .conversations
+            .first()
+            .is_some_and(Conversation::is_empty)
+        {
+            self.conversations.remove(0);
+        }
+        let new_conversation = Conversation::new(system_instructions.message.clone());
+        self.conversations.insert(0, new_conversation);
+        self.ui.active_conversation_index = 0;
+        self.ui.focus.chat = crate::app::focus::Chat::Prompt;
+    }
 }

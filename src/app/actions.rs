@@ -2,6 +2,7 @@ use crate::api::get_completion;
 use crate::app::state::State;
 use anyhow::{Context, Result};
 use std::io::Write;
+use std::path::Path;
 use std::process::Command;
 
 const API_ERROR_FEEDBACK: &str = "An error occured, see debug logs.";
@@ -29,21 +30,13 @@ pub fn get_message_text_from_editor(state: &State, initial_text: &str) -> Result
     Ok(message_text)
 }
 
-pub fn edit_config_file_in_editor(state: &State) -> Result<()> {
+pub fn edit_file_in_editor(state: &State, filepath: &Path) -> Result<()> {
     let mut editor_command_iter = state.config.commands.editor.iter();
-    Command::new(editor_command_iter.next().context("editor command empty")?)
-        .args(editor_command_iter.collect::<Vec<&String>>())
-        .arg(state.paths.get_config_file())
-        .status()
-        .context("run editor")?;
-    Ok(())
-}
-
-pub fn edit_models_file_in_editor(state: &State) -> Result<()> {
-    let mut editor_command_iter = state.config.commands.editor.iter();
-    Command::new(editor_command_iter.next().context("editor command empty")?)
-        .args(editor_command_iter.collect::<Vec<&String>>())
-        .arg(state.get_models_file())
+    let command_name = editor_command_iter.next().context("editor command empty")?;
+    let command_args: Vec<&String> = editor_command_iter.collect();
+    Command::new(command_name)
+        .args(command_args)
+        .arg(filepath)
         .status()
         .context("run editor")?;
     Ok(())
