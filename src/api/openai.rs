@@ -5,14 +5,6 @@ use serde::{Deserialize, Serialize};
 
 const API_ENDPOINT: &str = "https://api.openai.com/v1/chat/completions";
 
-#[derive(Debug, Default, Clone, Copy, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum ModelClass {
-    #[default]
-    Classic,
-    Reasoning,
-}
-
 #[derive(Debug, Deserialize, Clone)]
 pub struct Config {
     pub key: String,
@@ -23,7 +15,6 @@ pub struct Config {
 pub struct Model {
     pub id: String,
     pub name: String,
-    pub class: Option<ModelClass>,
     pub max_completion_tokens: u32,
     pub temperature: f32,
     pub top_p: f32,
@@ -50,14 +41,8 @@ struct Request {
 
 impl Request {
     fn new(model: &Model, conversation: &Conversation) -> Self {
-        let instruction_role = match model.class.unwrap_or_default() {
-            ModelClass::Classic => Role::System,
-            // we use the 'user' role because it seems some o1 models do not
-            // support developer/system instructions yet
-            ModelClass::Reasoning => Role::User,
-        };
         let system_message = Message {
-            role: instruction_role,
+            role: Role::System,
             content: conversation.system_instructions.clone(),
         };
         let mut messages = vec![system_message];
