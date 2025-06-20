@@ -16,8 +16,11 @@ pub enum Provider {
 
 impl std::fmt::Display for Provider {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let serialized_name = serde_json::to_string(self).map_err(|_| std::fmt::Error)?;
-        write!(f, "{}", serialized_name.trim_matches('"'))
+        let name = match self {
+            Self::OpenAi => "OpenAi",
+            Self::Anthropic => "Anthropic",
+        };
+        write!(f, "{name}")
     }
 }
 

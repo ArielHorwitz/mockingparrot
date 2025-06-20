@@ -34,7 +34,8 @@ pub fn draw_conversation(
     .split(rect);
     let convo_layout = *layout.first().context("ui index")?;
     let prompt_layout = *layout.get(1).context("ui index")?;
-    draw_conversation_prompt(frame, prompt_layout, state, scope);
+    draw_conversation_prompt(frame, prompt_layout, state, scope)
+        .context("draw conversation prompt")?;
     // Styles
     let is_focused = scope == ChatFocus::Messages;
     let text_style = state.theme.text(is_focused);
@@ -110,7 +111,7 @@ pub fn draw_conversation(
     Ok(())
 }
 
-fn draw_conversation_prompt(frame: &mut Frame, rect: Rect, state: &mut State, scope: ChatFocus) {
+fn draw_conversation_prompt(frame: &mut Frame, rect: Rect, state: &mut State, scope: ChatFocus) -> Result<()> {
     let is_focused = scope == ChatFocus::Prompt;
     let text_style = state.theme.text(is_focused);
     let cursor_style = state.theme.cursor(is_focused);
@@ -118,12 +119,32 @@ fn draw_conversation_prompt(frame: &mut Frame, rect: Rect, state: &mut State, sc
     state.ui.prompt_textarea.set_cursor_line_style(Style::new());
     state.ui.prompt_textarea.set_cursor_style(cursor_style);
     state.ui.prompt_textarea.set_style(text_style);
+
+    let selected_model = state.ui.selected_model;
+    let provider = crate::api::Provider::from(selected_model);
+    let model_name = match state.ui.selected_model {
+        crate::app::state::SelectedModel::OpenAi(model_index) => state
+                .models
+                .openai
+                .get(model_index)
+                .context("model index out of range")?
+                .name
+                .as_str(),
+        crate::app::state::SelectedModel::Anthropic(model_index) => state
+            .models
+            .anthropic
+            .get(model_index)
+            .context("model index out of range")?
+            .name
+            .as_str(),
+    };
     let block = Block::new()
         .borders(Borders::ALL)
         .style(state.theme.frame(is_focused))
-        .title("Prompt")
+        .title(format!("Ask {model_name} (by {provider})", ))
         .title_style(state.theme.title());
     let inner = block.inner(rect);
     frame.render_widget(block, rect);
     frame.render_widget(&state.ui.prompt_textarea, inner);
+    Ok(())
 }
