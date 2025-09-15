@@ -34,7 +34,7 @@ struct Anthropic {
 
 #[must_use]
 pub fn get_models_file(models_dir: &Path, provider: Provider) -> PathBuf {
-    models_dir.join(format!("{provider}.toml"))
+    models_dir.join(format!("{}.toml", provider.to_string().to_lowercase()))
 }
 
 fn get_openai_models_from_file(
