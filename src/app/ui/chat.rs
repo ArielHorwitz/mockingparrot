@@ -111,7 +111,12 @@ pub fn draw_conversation(
     Ok(())
 }
 
-fn draw_conversation_prompt(frame: &mut Frame, rect: Rect, state: &mut State, scope: ChatFocus) -> Result<()> {
+fn draw_conversation_prompt(
+    frame: &mut Frame,
+    rect: Rect,
+    state: &mut State,
+    scope: ChatFocus,
+) -> Result<()> {
     let is_focused = scope == ChatFocus::Prompt;
     let text_style = state.theme.text(is_focused);
     let cursor_style = state.theme.cursor(is_focused);
@@ -124,12 +129,12 @@ fn draw_conversation_prompt(frame: &mut Frame, rect: Rect, state: &mut State, sc
     let provider = crate::api::Provider::from(selected_model);
     let model_name = match state.ui.selected_model {
         crate::app::state::SelectedModel::OpenAi(model_index) => state
-                .models
-                .openai
-                .get(model_index)
-                .context("model index out of range")?
-                .name
-                .as_str(),
+            .models
+            .openai
+            .get(model_index)
+            .context("model index out of range")?
+            .name
+            .as_str(),
         crate::app::state::SelectedModel::Anthropic(model_index) => state
             .models
             .anthropic
@@ -141,7 +146,7 @@ fn draw_conversation_prompt(frame: &mut Frame, rect: Rect, state: &mut State, sc
     let block = Block::new()
         .borders(Borders::ALL)
         .style(state.theme.frame(is_focused))
-        .title(format!("Ask {model_name} (by {provider})", ))
+        .title(format!("Ask {model_name} (by {provider})"))
         .title_style(state.theme.title());
     let inner = block.inner(rect);
     frame.render_widget(block, rect);
