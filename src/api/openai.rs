@@ -133,7 +133,7 @@ struct Response {
     pub model: String,
     pub choices: Vec<ResponseChoice>,
     pub usage: ResponseUsage,
-    pub system_fingerprint: String,
+    pub system_fingerprint: Option<String>,
 }
 
 pub async fn get_completion(
